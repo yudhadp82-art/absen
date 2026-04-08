@@ -1,0 +1,22 @@
+<resources>
+    <string name="app_name">Absensi Karyawan</string>
+    <string name="check_in">Check In</string>
+    <string name="check_out">Check Out</string>
+    <string name="attendance_history">Riwayat Absensi</string>
+    <string name="location_permission_required">Izin lokasi diperlukan</string>
+    <string name="grant_permission">Berikan Izin</string>
+    <string name="location_fetching">Mengambil lokasi…</string>
+    <string name="location_success">Lokasi berhasil diambil</string>
+    <string name="location_failed">Gagal mengambil lokasi</string>
+    <string name="submitting_attendance">Menyimpan absensi…</string>
+    <string name="attendance_success">Absensi berhasil!</string>
+    <string name="attendance_failed">Absensi gagal</string>
+    <string name="employee_id">ID Karyawan</string>
+    <string name="employee_name">Nama Karyawan</string>
+    <string name="please_fill_all_fields">Harap isi semua field</string>
+    <string name="current_location">Lokasi Saat Ini</string>
+    <string name="latitude">Latitude</string>
+    <string name="longitude">Longitude</string>
+    <string name="accuracy">Akurasi</string>
+    <string name="meters">meter</string>
+</resources>
