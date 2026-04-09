@@ -190,6 +190,14 @@ CREATE POLICY "Allow public update employees"
     USING (true)
     WITH CHECK (true);
 
+-- Handle existing DELETE policy safely
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'employees' AND policyname = 'Allow public delete employees') THEN
+        DROP POLICY IF EXISTS "Allow public delete employees" ON employees;
+    END IF;
+END $$;
+
 CREATE POLICY "Allow public delete employees"
     ON employees
     FOR DELETE

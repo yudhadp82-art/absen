@@ -4,7 +4,11 @@
 -- This adds the missing DELETE policy to the employees table
 -- The issue was that RLS was enabled but no DELETE policy existed
 
-CREATE POLICY IF NOT EXISTS "Allow public delete employees"
+-- First, check if policy already exists and drop it if it does
+DROP POLICY IF EXISTS "Allow public delete employees" ON employees;
+
+-- Create the DELETE policy
+CREATE POLICY "Allow public delete employees"
     ON employees
     FOR DELETE
     TO public

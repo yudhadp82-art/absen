@@ -177,11 +177,26 @@ CREATE POLICY "Allow public select employees"
     TO public
     USING (true);
 
+-- Handle existing policies safely
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'employees' AND policyname = 'Allow public insert employees') THEN
+        DROP POLICY IF EXISTS "Allow public insert employees" ON employees;
+    END IF;
+END $$;
+
 CREATE POLICY "Allow public insert employees"
     ON employees
     FOR INSERT
     TO public
     WITH CHECK (true);
+
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'employees' AND policyname = 'Allow public update employees') THEN
+        DROP POLICY IF EXISTS "Allow public update employees" ON employees;
+    END IF;
+END $$;
 
 CREATE POLICY "Allow public update employees"
     ON employees
@@ -189,6 +204,13 @@ CREATE POLICY "Allow public update employees"
     TO public
     USING (true)
     WITH CHECK (true);
+
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'employees' AND policyname = 'Allow public delete employees') THEN
+        DROP POLICY IF EXISTS "Allow public delete employees" ON employees;
+    END IF;
+END $$;
 
 CREATE POLICY "Allow public delete employees"
     ON employees
