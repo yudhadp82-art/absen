@@ -5,6 +5,12 @@ const Reports = {
         document.getElementById('reportDate').value = date;
         await this.generateDailyReport();
     },
+    async showWeeklyReport() {
+        App.showToast('Laporan mingguan belum tersedia', 'warning');
+    },
+    async showMonthlyReport() {
+        App.showToast('Laporan bulanan belum tersedia', 'warning');
+    },
     async generateDailyReport() {
         const date = document.getElementById('reportDate').value;
         if (!date) return App.showToast('Pilih tanggal', 'warning');

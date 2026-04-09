@@ -11,26 +11,14 @@ const App = {
         isSubmitting: false
     },
 
-    /**
-     * Initialize app
-     */
     init() {
         console.log('🚀 Absensi Karyawan App initialized');
         this.loadEmployeeInfo();
         this.bindEvents();
         this.loadTodayHistory();
-        this.checkLocationPermission();
-        this.initializeReportDate();
         this.loadEmployees();
     },
 
-    /**
-     * Initialize report date to today
-     */
-    initializeReportDate() {
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('reportDate').value = today;
-    },
 
     /**
      * Load employees
@@ -67,15 +55,22 @@ const App = {
             });
         }
 
-        // Get location button
-        document.getElementById('getLocationBtn').addEventListener('click', () => {
-            this.handleGetLocation();
-        });
+        // Manual time toggle
+        const manualTimeToggle = document.getElementById('manualTimeToggle');
+        const manualTimeContainer = document.getElementById('manualTimeContainer');
+        const manualTimeInput = document.getElementById('manualTimeInput');
 
-        // Refresh location button
-        document.getElementById('refreshLocationBtn').addEventListener('click', () => {
-            this.handleGetLocation();
-        });
+        if (manualTimeToggle) {
+            manualTimeToggle.addEventListener('change', (e) => {
+                manualTimeContainer.style.display = e.target.checked ? 'block' : 'none';
+                if (e.target.checked) {
+                    // Set default to current time in local format
+                    const now = new Date();
+                    const localISO = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+                    manualTimeInput.value = localISO;
+                }
+            });
+        }
 
         // Check-in button
         document.getElementById('checkInBtn').addEventListener('click', () => {
@@ -87,16 +82,7 @@ const App = {
             this.handleAttendance('checkout');
         });
 
-        // Load report button
-        document.getElementById('loadReportBtn').addEventListener('click', () => {
-            const date = document.getElementById('reportDate').value;
-            Reports.loadDailyReport(date);
-        });
 
-        // Add employee button
-        document.getElementById('addEmployeeBtn').addEventListener('click', () => {
-            this.handleAddEmployee();
-        });
     },
 
     /**
@@ -135,29 +121,8 @@ const App = {
      * Handle get location
      */
     async handleGetLocation() {
-        // Show loading
-        this.showLoading('Mengambil lokasi...');
-
-        try {
-            const location = await LocationManager.getCurrentPosition();
-
-            // Hide loading
-            this.hideLoading();
-
-            // Update state
-            this.state.currentLocation = location;
-
-            // Update UI
-            this.displayLocation(location);
-            this.enableAttendanceButtons();
-
-            this.showToast('Lokasi berhasil diambil', 'success');
-
-        } catch (error) {
-            this.hideLoading();
-            this.showStatus(error.message, 'error');
-            this.showToast(error.message, 'error');
-        }
+        // Feature removed
+        return;
     },
 
     /**
@@ -204,15 +169,25 @@ const App = {
             return;
         }
 
-        // Validate location
-        if (!this.state.currentLocation) {
-            this.showToast('Harap ambil lokasi terlebih dahulu', 'error');
-            return;
-        }
-
         // Show loading
         const actionText = type === 'checkin' ? 'Check-in' : 'Check-out';
         this.showLoading(`Memproses ${actionText}...`);
+
+        // Use dummy location since tracking is disabled
+        const dummyLocation = {
+            latitude: 0,
+            longitude: 0,
+            accuracy: 0
+        };
+
+        // Check if manual time is used
+        const manualTimeToggle = document.getElementById('manualTimeToggle');
+        const manualTimeInput = document.getElementById('manualTimeInput');
+        let timestamp = null;
+
+        if (manualTimeToggle && manualTimeToggle.checked && manualTimeInput.value) {
+            timestamp = new Date(manualTimeInput.value).toISOString();
+        }
 
         try {
             // Submit attendance
@@ -220,7 +195,8 @@ const App = {
                 this.state.employeeId,
                 this.state.employeeName,
                 type,
-                this.state.currentLocation
+                dummyLocation,
+                timestamp
             );
 
             // Hide loading
@@ -243,42 +219,6 @@ const App = {
         }
     },
 
-    /**
-     * Handle add employee
-     */
-    async handleAddEmployee() {
-        const employeeId = document.getElementById('newEmployeeId').value.trim();
-        const employeeName = document.getElementById('newEmployeeName').value.trim();
-        const email = document.getElementById('newEmployeeEmail').value.trim();
-        const department = document.getElementById('newEmployeeDept').value;
-        const position = document.getElementById('newEmployeePos').value.trim();
-        const phone = document.getElementById('newEmployeePhone').value.trim();
-
-        // Validation
-        if (!employeeId || !employeeName) {
-            this.showToast('ID dan Nama karyawan wajib diisi', 'error');
-            return;
-        }
-
-        // Add employee
-        const success = await Employees.addEmployee({
-            employeeId,
-            employeeName,
-            email: email || null,
-            department: department || null,
-            position: position || null,
-            phone: phone || null
-        });
-
-        if (success) {
-            // Reload report if showing
-            const reportContent = document.getElementById('reportContent');
-            if (reportContent.style.display !== 'none') {
-                const date = document.getElementById('reportDate').value;
-                Reports.loadDailyReport(date);
-            }
-        }
-    },
 
     /**
      * Load today's history

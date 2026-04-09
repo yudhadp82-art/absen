@@ -2,7 +2,7 @@
 // Service Worker for PWA
 // ========================================
 
-const CACHE_NAME = 'absensi-v2.0.0';
+const CACHE_NAME = 'absensi-v2.3.0';
 const urlsToCache = [
     '/',
     '/index.html',

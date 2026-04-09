@@ -88,7 +88,7 @@ const Employees = {
             App.showLoading('Menyimpan data...');
 
             const isEdit = editEmployeeId !== '';
-            const url = isEdit ? `/employees/${employeeId}` : '/employees';
+            const url = isEdit ? `/employees?id=${employeeId}` : '/employees';
             const method = isEdit ? 'PUT' : 'POST';
 
             const response = await API.request(url, {
@@ -127,7 +127,7 @@ const Employees = {
         try {
             App.showLoading('Menghapus data...');
 
-            const response = await API.request(`/employees/${employeeId}`, {
+            const response = await API.request(`/employees?id=${employeeId}`, {
                 method: 'DELETE'
             });
 

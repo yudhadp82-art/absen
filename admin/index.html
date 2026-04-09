@@ -25,19 +25,19 @@
         </div>
 
         <nav class="sidebar-nav">
-            <a href="#dashboard" class="nav-item active" onclick="showSection('dashboard')">
+            <a href="#dashboard" class="nav-item active" onclick="showSection('dashboard', event)">
                 <span class="nav-icon">📊</span>
                 <span class="nav-text">Dashboard</span>
             </a>
-            <a href="#employees" class="nav-item" onclick="showSection('employees')">
+            <a href="#employees" class="nav-item" onclick="showSection('employees', event)">
                 <span class="nav-icon">👥</span>
                 <span class="nav-text">Karyawan</span>
             </a>
-            <a href="#attendance" class="nav-item" onclick="showSection('attendance')">
+            <a href="#attendance" class="nav-item" onclick="showSection('attendance', event)">
                 <span class="nav-icon">📝</span>
                 <span class="nav-text">Absensi</span>
             </a>
-            <a href="#reports" class="nav-item" onclick="showSection('reports')">
+            <a href="#reports" class="nav-item" onclick="showSection('reports', event)">
                 <span class="nav-icon">📈</span>
                 <span class="nav-text">Laporan</span>
             </a>
@@ -219,13 +219,11 @@
                                 <th>Nama</th>
                                 <th>Tipe</th>
                                 <th>Departemen</th>
-                                <th>Lokasi</th>
-                                <th>Akurasi</th>
                             </tr>
                         </thead>
                         <tbody id="attendanceTableBody">
                             <tr>
-                                <td colspan="7" class="text-center">Memuat data...</td>
+                                <td colspan="5" class="text-center">Memuat data...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -380,7 +378,7 @@
             document.getElementById('sidebar').classList.toggle('active');
         }
 
-        function showSection(sectionId) {
+        function showSection(sectionId, evt) {
             // Hide all sections
             document.querySelectorAll('.content-section').forEach(section => {
                 section.classList.remove('active');
@@ -395,7 +393,8 @@
             document.getElementById(sectionId + '-section').classList.add('active');
 
             // Add active class to clicked nav item
-            event.target.closest('.nav-item').classList.add('active');
+            const clicked = evt && evt.target ? evt.target.closest('.nav-item') : null;
+            if (clicked) clicked.classList.add('active');
 
             // Load data for section
             if (sectionId === 'dashboard') {

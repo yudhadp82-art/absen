@@ -19,15 +19,27 @@ const API = {
 
         try {
             const response = await fetch(url, finalOptions);
+            
+            // Handle non-JSON responses
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                const text = await response.text();
+                console.error('Non-JSON Response:', text);
+                throw new Error(`Server returned non-JSON response (${response.status})`);
+            }
+
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.error || data.message || 'API request failed');
+                throw new Error(data.error || data.message || `API request failed with status ${response.status}`);
             }
 
             return data;
         } catch (error) {
             console.error('API Error:', error);
+            if (error instanceof SyntaxError) {
+                throw new Error('API returned invalid JSON format');
+            }
             throw error;
         }
     },
@@ -42,7 +54,7 @@ const API = {
     /**
      * Submit attendance (check-in/check-out)
      */
-    async submitAttendance(employeeId, employeeName, type, location) {
+    async submitAttendance(employeeId, employeeName, type, location, timestamp = null) {
         return this.request('/attendance', {
             method: 'POST',
             body: JSON.stringify({
@@ -52,7 +64,8 @@ const API = {
                 latitude: location.latitude,
                 longitude: location.longitude,
                 accuracy: location.accuracy,
-                deviceId: this.getDeviceId()
+                deviceId: this.getDeviceId(),
+                timestamp: timestamp
             })
         });
     },

@@ -85,14 +85,22 @@ export default async function handler(req, res) {
       departmentStats[dept].total++;
     });
 
+    const presentByDept = {};
+    Object.keys(departmentStats).forEach(dept => {
+      presentByDept[dept] = new Set();
+    });
+
     todayAttendance.forEach(att => {
+      if (att.type !== 'checkin') return;
       const emp = employees.find(e => e.employee_id === att.employee_id);
-      if (emp) {
-        const dept = emp.department || 'Unassigned';
-        if (att.type === 'checkin' && !departmentStats[dept].present) {
-          departmentStats[dept].present++;
-        }
-      }
+      if (!emp) return;
+      const dept = emp.department || 'Unassigned';
+      if (!presentByDept[dept]) presentByDept[dept] = new Set();
+      presentByDept[dept].add(emp.employee_id);
+    });
+
+    Object.keys(departmentStats).forEach(dept => {
+      departmentStats[dept].present = presentByDept[dept]?.size || 0;
     });
 
     Object.keys(departmentStats).forEach(dept => {

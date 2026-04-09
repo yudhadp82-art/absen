@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#2196F3">
-    <meta name="description" content="Sistem Absensi Karyawan dengan GPS Location Tracking">
+    <meta name="description" content="Sistem Absensi Karyawan">
 
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json">
@@ -16,17 +16,35 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Cache Buster Script -->
+    <script>
+        // Force refresh and clear service worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for(let registration of registrations) {
+                    registration.unregister();
+                }
+            });
+        }
+        // Clear all caches
+        if ('caches' in window) {
+            caches.keys().then(function(names) {
+                for (let name of names) caches.delete(name);
+            });
+        }
+    </script>
 
     <!-- CSS -->
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style.css?v=2.3.0">
 </head>
 <body>
     <!-- App Container -->
     <div id="app">
         <!-- Header -->
         <header class="app-header">
-            <h1>📍 Absensi Karyawan</h1>
+            <h1>Absensi Karyawan</h1>
         </header>
 
         <!-- Main Content -->
@@ -36,10 +54,16 @@
                 <h2>Informasi Karyawan</h2>
 
                 <div class="form-group">
-                    <label for="employeeSelect">Pilih Karyawan</label>
-                    <select id="employeeSelect" class="form-input">
-                        <option value="">-- Pilih Karyawan --</option>
-                    </select>
+                    <label for="employeeSearch">Cari Nama / ID Karyawan</label>
+                    <input 
+                        type="text" 
+                        id="employeeSearch" 
+                        class="form-input" 
+                        list="employeeDatalist" 
+                        placeholder="Ketik nama atau ID..."
+                        autocomplete="off"
+                    >
+                    <datalist id="employeeDatalist"></datalist>
                 </div>
 
                 <div class="form-group">
@@ -69,58 +93,37 @@
                 </button>
             </section>
 
-            <!-- Location Card -->
-            <section class="card location-card">
-                <h2>📍 Lokasi Saat Ini</h2>
-
-                <div id="locationStatus" class="location-status">
-                    <div class="status-icon">📍</div>
-                    <p>Belum ada lokasi</p>
-                    <small>Klik tombol di bawah untuk mengambil lokasi</small>
-                </div>
-
-                <div id="locationInfo" class="location-info" style="display: none;">
-                    <div class="location-success">
-                        <span class="success-icon">✅</span>
-                        <span>Lokasi berhasil diambil!</span>
-                    </div>
-
-                    <div class="location-details">
-                        <div class="detail-row">
-                            <span class="detail-label">Latitude</span>
-                            <span class="detail-value" id="latitude">-</span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="detail-label">Longitude</span>
-                            <span class="detail-value" id="longitude">-</span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="detail-label">Akurasi</span>
-                            <span class="detail-value" id="accuracy">-</span>
-                        </div>
-                    </div>
-
-                    <button id="refreshLocationBtn" class="btn btn-secondary btn-small">
-                        🔄 Refresh Lokasi
-                    </button>
-                </div>
-
-                <button id="getLocationBtn" class="btn btn-primary">
-                    📍 Ambil Lokasi
-                </button>
-            </section>
 
             <!-- Attendance Buttons -->
             <section class="card attendance-card">
                 <h2>📝 Absensi</h2>
 
+                <!-- Manual Time Toggle -->
+                <div class="manual-time-toggle">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="manualTimeToggle">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="toggle-label">Atur Waktu Manual</span>
+                </div>
+
+                <!-- Manual Time Input -->
+                <div id="manualTimeContainer" class="form-group" style="display: none; margin-top: 15px;">
+                    <label for="manualTimeInput">Pilih Waktu</label>
+                    <input 
+                        type="datetime-local" 
+                        id="manualTimeInput" 
+                        class="form-input"
+                    >
+                </div>
+
                 <div class="attendance-buttons">
-                    <button id="checkInBtn" class="btn btn-checkin" disabled>
+                    <button id="checkInBtn" class="btn btn-checkin">
                         <span class="btn-icon">☀️</span>
                         <span class="btn-text">Check In</span>
                     </button>
 
-                    <button id="checkOutBtn" class="btn btn-checkout" disabled>
+                    <button id="checkOutBtn" class="btn btn-checkout">
                         <span class="btn-icon">🌙</span>
                         <span class="btn-text">Check Out</span>
                     </button>
@@ -132,34 +135,6 @@
                 <div id="statusMessage" class="status-message"></div>
             </section>
 
-            <!-- Daily Report Card -->
-            <section class="card report-card">
-                <h2>📊 Laporan Harian</h2>
-
-                <div class="form-group">
-                    <label for="reportDate">Tanggal</label>
-                    <input
-                        type="date"
-                        id="reportDate"
-                        class="form-input"
-                    >
-                </div>
-
-                <button id="loadReportBtn" class="btn btn-primary">
-                    📊 Tampilkan Laporan
-                </button>
-
-                <div id="reportContent" style="display: none;">
-                    <!-- Statistics -->
-                    <div id="reportStats" class="report-stats"></div>
-
-                    <!-- Employee List -->
-                    <div id="employeeList" class="employee-list-section">
-                        <h3>Daftar Karyawan</h3>
-                        <div id="reportEmployeeList" class="report-employee-list"></div>
-                    </div>
-                </div>
-            </section>
 
             <!-- History Card -->
             <section class="card history-card">
@@ -169,84 +144,6 @@
                 </div>
             </section>
 
-            <!-- Add Employee Card (Collapsible) -->
-            <section class="card add-employee-card">
-                <h2 onclick="toggleAddEmployeeForm()" style="cursor: pointer;">
-                    ➕ Tambah Karyawan Baru
-                    <span id="addEmployeeToggle" style="float: right;">▼</span>
-                </h2>
-
-                <div id="addEmployeeForm" style="display: none;">
-                    <div class="form-group">
-                        <label for="newEmployeeId">ID Karyawan *</label>
-                        <input
-                            type="text"
-                            id="newEmployeeId"
-                            class="form-input"
-                            placeholder="Contoh: EMP011"
-                        >
-                    </div>
-
-                    <div class="form-group">
-                        <label for="newEmployeeName">Nama Karyawan *</label>
-                        <input
-                            type="text"
-                            id="newEmployeeName"
-                            class="form-input"
-                            placeholder="Nama lengkap"
-                        >
-                    </div>
-
-                    <div class="form-group">
-                        <label for="newEmployeeEmail">Email</label>
-                        <input
-                            type="email"
-                            id="newEmployeeEmail"
-                            class="form-input"
-                            placeholder="email@example.com"
-                        >
-                    </div>
-
-                    <div class="form-group">
-                        <label for="newEmployeeDept">Departemen</label>
-                        <select id="newEmployeeDept" class="form-input">
-                            <option value="">Pilih Departemen</option>
-                            <option value="IT">IT</option>
-                            <option value="HR">HR</option>
-                            <option value="Finance">Finance</option>
-                            <option value="Marketing">Marketing</option>
-                            <option value="Operations">Operations</option>
-                            <option value="Sales">Sales</option>
-                            <option value="Admin">Admin</option>
-                            <option value="Logistics">Logistics</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="newEmployeePos">Posisi</label>
-                        <input
-                            type="text"
-                            id="newEmployeePos"
-                            class="form-input"
-                            placeholder="Contoh: Staff"
-                        >
-                    </div>
-
-                    <div class="form-group">
-                        <label for="newEmployeePhone">Telepon</label>
-                        <input
-                            type="tel"
-                            id="newEmployeePhone"
-                            class="form-input"
-                            placeholder="08xxxxxxxxxx"
-                        >
-                    </div>
-
-                    <button id="addEmployeeBtn" class="btn btn-primary">
-                        ➕ Tambah Karyawan
-                    </button>
-                </div>
-            </section>
         </main>
 
         <!-- Loading Overlay -->
@@ -262,13 +159,12 @@
     </div>
 
     <!-- JavaScript -->
-    <script src="js/config.js"></script>
-    <script src="js/storage.js"></script>
-    <script src="js/location.js"></script>
-    <script src="js/api.js"></script>
-    <script src="js/employees.js"></script>
-    <script src="js/reports.js"></script>
-    <script src="js/app.js"></script>
+    <script src="js/config.js?v=2.3.0"></script>
+    <script src="js/storage.js?v=2.3.0"></script>
+    <script src="js/location.js?v=2.3.0"></script>
+    <script src="js/api.js?v=2.3.0"></script>
+    <script src="js/employees.js?v=2.3.0"></script>
+    <script src="js/app.js?v=2.3.0"></script>
 
     <!-- Service Worker Registration -->
     <script>
@@ -277,6 +173,21 @@
                 navigator.serviceWorker.register('/service-worker.js')
                     .then(registration => {
                         console.log('ServiceWorker registered:', registration);
+                        
+                        // Check for updates
+                        registration.onupdatefound = () => {
+                            const installingWorker = registration.installing;
+                            if (installingWorker) {
+                                installingWorker.onstatechange = () => {
+                                    if (installingWorker.state === 'installed') {
+                                        if (navigator.serviceWorker.controller) {
+                                            console.log('New version available! Refreshing...');
+                                            window.location.reload();
+                                        }
+                                    }
+                                };
+                            }
+                        };
                     })
                     .catch(error => {
                         console.log('ServiceWorker registration failed:', error);
@@ -284,17 +195,6 @@
             });
         }
 
-        function toggleAddEmployeeForm() {
-            const form = document.getElementById('addEmployeeForm');
-            const toggle = document.getElementById('addEmployeeToggle');
-            if (form.style.display === 'none') {
-                form.style.display = 'block';
-                toggle.textContent = '▲';
-            } else {
-                form.style.display = 'none';
-                toggle.textContent = '▼';
-            }
-        }
     </script>
 </body>
 </html>

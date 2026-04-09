@@ -1,7 +1,14 @@
 // Attendance Management
 const Attendance = {
+    currentFilters: {
+        date: null,
+        department: '',
+        type: ''
+    },
     async load() {
         const date = new Date().toISOString().split('T')[0];
+        const dateInput = document.getElementById('filterDate');
+        if (dateInput && !dateInput.value) dateInput.value = date;
         await this.loadByDate(date);
     },
     async loadByDate(date) {
@@ -10,12 +17,21 @@ const Attendance = {
             const response = await API.getAttendance({ date, limit: 100 });
             App.hideLoading();
             if (response.success) {
-                this.renderTable(response.data);
+                this.renderTable(this.applyClientSideFilters(response.data));
             }
         } catch (error) {
             App.hideLoading();
             App.showToast(error.message, 'error');
         }
+    },
+    applyClientSideFilters(data) {
+        const dept = (this.currentFilters.department || '').trim();
+        const type = (this.currentFilters.type || '').trim();
+        return (data || []).filter(r => {
+            if (dept && (r.department || '') !== dept) return false;
+            if (type && r.type !== type) return false;
+            return true;
+        });
     },
     renderTable(data) {
         const tbody = document.getElementById('attendanceTableBody');
@@ -31,10 +47,33 @@ const Attendance = {
                 '<td>' + r.employeeName + '</td>' +
                 '<td><span class="status-badge ' + (r.type === 'checkin' ? 'status-checkin' : 'status-checkout') + '">' + icon + ' ' + (r.type === 'checkin' ? 'Check-In' : 'Check-Out') + '</span></td>' +
                 '<td>' + (r.department || '-') + '</td>' +
-                '<td><small>' + r.location.latitude.toFixed(6) + ', ' + r.location.longitude.toFixed(6) + '</small></td>' +
-                '<td>' + (r.location.accuracy ? '~' + Math.round(r.location.accuracy) + 'm' : '-') + '</td>' +
                 '</tr>';
         }).join('');
+    },
+    async applyFilters() {
+        const dateInput = document.getElementById('filterDate');
+        const deptInput = document.getElementById('filterDept');
+        const typeInput = document.getElementById('filterType');
+
+        const date = (dateInput?.value || new Date().toISOString().split('T')[0]).trim();
+        this.currentFilters.date = date;
+        this.currentFilters.department = deptInput?.value || '';
+        this.currentFilters.type = typeInput?.value || '';
+
+        await this.loadByDate(date);
+    },
+    async clearFilters() {
+        const today = new Date().toISOString().split('T')[0];
+        const dateInput = document.getElementById('filterDate');
+        const deptInput = document.getElementById('filterDept');
+        const typeInput = document.getElementById('filterType');
+
+        if (dateInput) dateInput.value = today;
+        if (deptInput) deptInput.value = '';
+        if (typeInput) typeInput.value = '';
+
+        this.currentFilters = { date: today, department: '', type: '' };
+        await this.loadByDate(today);
     },
     async exportToCSV() {
         const date = new Date().toISOString().split('T')[0];
@@ -48,6 +87,7 @@ const Attendance = {
                     ID: r.employeeId,
                     Nama: r.employeeName,
                     Tipe: r.type === 'checkin' ? 'Check-In' : 'Check-Out',
+                    Departemen: r.department || '-',
                     Latitude: r.location.latitude,
                     Longitude: r.location.longitude
                 }));

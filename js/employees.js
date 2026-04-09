@@ -12,7 +12,7 @@ const Employees = {
         try {
             App.showLoading('Memuat daftar karyawan...');
 
-            const response = await API.request('/employees', {
+            const response = await API.request('/employees?_=' + new Date().getTime(), {
                 method: 'GET'
             });
 
@@ -34,40 +34,54 @@ const Employees = {
     },
 
     /**
-     * Populate employee select dropdown
+     * Populate employee datalist and handle search input
      */
     populateEmployeeSelect() {
-        const select = document.getElementById('employeeSelect');
+        const input = document.getElementById('employeeSearch');
+        const datalist = document.getElementById('employeeDatalist');
+
+        if (!input || !datalist) return;
 
         // Clear existing options
-        select.innerHTML = '<option value="">-- Pilih Karyawan --</option>';
+        datalist.innerHTML = '';
 
-        // Add employee options
+        // Add employee options to datalist
         this.allEmployees.forEach(emp => {
             const option = document.createElement('option');
-            option.value = emp.employee_id;
-            option.textContent = `${emp.employee_id} - ${emp.employee_name}`;
-            if (emp.department) {
-                option.textContent += ` (${emp.department})`;
-            }
-            select.appendChild(option);
+            // Format: ID - Nama (Dept)
+            const label = `${emp.employee_id} - ${emp.employee_name}${emp.department ? ' (' + emp.department + ')' : ''}`;
+            option.value = label;
+            datalist.appendChild(option);
         });
 
-        // Add event listener
-        select.onchange = () => {
-            const selectedId = select.value;
-            const employee = this.allEmployees.find(emp => emp.employee_id === selectedId);
+        // Add input event listener to detect selection
+        input.oninput = () => {
+            const val = input.value;
+            // Find employee by matching the prefix (ID) or the entire label
+            const employee = this.allEmployees.find(emp => {
+                const label = `${emp.employee_id} - ${emp.employee_name}${emp.department ? ' (' + emp.department + ')' : ''}`;
+                return val === label || val === emp.employee_id || val === emp.employee_name;
+            });
 
             if (employee) {
                 document.getElementById('employeeId').value = employee.employee_id;
                 document.getElementById('employeeName').value = employee.employee_name;
                 App.state.employeeId = employee.employee_id;
                 App.state.employeeName = employee.employee_name;
+                
+                // Show toast if exactly matched from search
+                console.log(`Matched employee: ${employee.employee_name}`);
+                
+                // Refresh history for this employee
+                App.loadTodayHistory();
             } else {
-                document.getElementById('employeeId').value = '';
-                document.getElementById('employeeName').value = '';
-                App.state.employeeId = '';
-                App.state.employeeName = '';
+                // If input is empty or doesn't match, clear hidden fields
+                if (val.trim() === '') {
+                    document.getElementById('employeeId').value = '';
+                    document.getElementById('employeeName').value = '';
+                    App.state.employeeId = '';
+                    App.state.employeeName = '';
+                }
             }
         };
     },

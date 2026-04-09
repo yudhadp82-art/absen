@@ -42,7 +42,9 @@ export default async function handler(req, res) {
         queryBuilder = queryBuilder.eq('department', department);
       }
 
-      queryBuilder = queryBuilder.eq('is_active', isActive === 'true');
+      // Handle boolean conversion correctly
+      const activeFilter = isActive === 'false' ? false : true;
+      queryBuilder = queryBuilder.eq('is_active', activeFilter);
 
       const { data, error } = await queryBuilder;
 
