@@ -41,6 +41,10 @@
                 <span class="nav-icon">📈</span>
                 <span class="nav-text">Laporan</span>
             </a>
+            <a href="#context7" class="nav-item" onclick="showSection('context7', event)">
+                <span class="nav-icon">📚</span>
+                <span class="nav-text">Dokumentasi</span>
+            </a>
         </nav>
 
         <div class="sidebar-footer">
@@ -280,6 +284,57 @@
                 </div>
             </div>
         </section>
+
+        <!-- Context7 Documentation Section -->
+        <section id="context7-section" class="content-section">
+            <div class="section-header">
+                <h2>📚 Context7 Documentation Search</h2>
+                <button class="btn btn-secondary" onclick="Context7.clearResults()">
+                    ✕ Reset
+                </button>
+            </div>
+
+            <!-- Search Form -->
+            <div class="card">
+                <h3>Cari Dokumentasi Library</h3>
+                <div class="form-group">
+                    <label>Nama Library *</label>
+                    <input type="text" id="context7LibraryName" class="form-input" placeholder="Contoh: React, Express.js, Next.js">
+                </div>
+                <div class="form-group">
+                    <label>Query / Pertanyaan *</label>
+                    <input type="text" id="context7Query" class="form-input" placeholder="Contoh: How to use useEffect hook">
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-primary" onclick="Context7.searchLibrary()">
+                        🔍 Cari Library
+                    </button>
+                </div>
+            </div>
+
+            <!-- Selected Library Info -->
+            <div class="card" id="selectedLibraryCard" style="display: none;">
+                <h3>Library Terpilih</h3>
+                <p><strong>Nama:</strong> <span id="selectedLibraryName">-</span></p>
+                <input type="hidden" id="selectedLibraryId" value="">
+            </div>
+
+            <!-- Library Results -->
+            <div class="card" id="libraryResultsCard" style="display: none;">
+                <h3>Hasil Pencarian Library</h3>
+                <div id="context7LibraryResults" class="context7-results">
+                    <p class="empty-state">Lakukan pencarian untuk melihat hasil</p>
+                </div>
+            </div>
+
+            <!-- Documentation Results -->
+            <div class="card" id="docsResultsCard" style="display: none;">
+                <h3>Dokumentasi</h3>
+                <div id="context7DocsResults" class="context7-docs">
+                    <p class="empty-state">Pilih library untuk melihat dokumentasi</p>
+                </div>
+            </div>
+        </section>
     </div>
 
     <!-- Add/Edit Employee Modal -->
@@ -371,6 +426,7 @@
     <script src="js/attendance.js"></script>
     <script src="js/reports.js"></script>
     <script src="js/dashboard.js?v=2"></script>
+    <script src="js/context7.js"></script>
     <script src="js/app.js"></script>
 
     <script>
@@ -403,6 +459,17 @@
                 Employees.load();
             } else if (sectionId === 'attendance') {
                 Attendance.load();
+            } else if (sectionId === 'context7') {
+                // Show result cards if there's content
+                const libraryResults = document.getElementById('context7LibraryResults');
+                const docsResults = document.getElementById('context7DocsResults');
+
+                if (libraryResults.innerHTML.trim() && !libraryResults.querySelector('.empty-state')) {
+                    document.getElementById('libraryResultsCard').style.display = 'block';
+                }
+                if (docsResults.innerHTML.trim() && !docsResults.querySelector('.empty-state')) {
+                    document.getElementById('docsResultsCard').style.display = 'block';
+                }
             }
         }
 
