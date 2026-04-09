@@ -184,18 +184,46 @@ export default async function handler(req, res) {
         });
       }
 
-      const { error } = await supabase
+      console.log(`Attempting to delete employee: ${employeeId}`);
+
+      const { data: existingEmployee, error: checkError } = await supabase
+        .from('employees')
+        .select('id, employee_id')
+        .eq('employee_id', employeeId)
+        .single();
+
+      if (checkError) {
+        console.error('Error checking employee existence:', checkError);
+        return res.status(404).json({
+          success: false,
+          error: 'Employee not found',
+          details: checkError.message
+        });
+      }
+
+      if (!existingEmployee) {
+        return res.status(404).json({
+          success: false,
+          error: 'Employee not found'
+        });
+      }
+
+      const { error: deleteError } = await supabase
         .from('employees')
         .delete()
         .eq('employee_id', employeeId);
 
-      if (error) {
+      if (deleteError) {
+        console.error('Delete operation failed:', deleteError);
         return res.status(500).json({
           success: false,
           error: 'Failed to delete employee',
-          details: error.message
+          details: deleteError.message,
+          hint: 'Check if RLS DELETE policy exists for employees table'
         });
       }
+
+      console.log(`Successfully deleted employee: ${employeeId}`);
 
       return res.status(200).json({
         success: true,

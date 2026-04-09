@@ -190,6 +190,12 @@ CREATE POLICY "Allow public update employees"
     USING (true)
     WITH CHECK (true);
 
+CREATE POLICY "Allow public delete employees"
+    ON employees
+    FOR DELETE
+    TO public
+    USING (true);
+
 -- Insert sample employees
 INSERT INTO employees (employee_id, employee_name, email, department, position, phone) VALUES
 ('EMP001', 'Ahmad Dahlan', 'ahmad@example.com', 'IT', 'Software Engineer', '081234567890'),

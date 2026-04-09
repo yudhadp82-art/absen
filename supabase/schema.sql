@@ -177,6 +177,25 @@ CREATE POLICY "Allow public select employees"
     TO public
     USING (true);
 
+CREATE POLICY "Allow public insert employees"
+    ON employees
+    FOR INSERT
+    TO public
+    WITH CHECK (true);
+
+CREATE POLICY "Allow public update employees"
+    ON employees
+    FOR UPDATE
+    TO public
+    USING (true)
+    WITH CHECK (true);
+
+CREATE POLICY "Allow public delete employees"
+    ON employees
+    FOR DELETE
+    TO public
+    USING (true);
+
 -- Comments for documentation
 COMMENT ON TABLE attendance IS 'Stores employee check-in/check-out records with GPS location';
 COMMENT ON TABLE employees IS 'Stores employee information';
