@@ -1,0 +1,94 @@
+<!-- Payroll Management Section -->
+<section id="payroll-section" class="content-section">
+    <div class="section-header">
+        <h2>💰 Pembayaran Karyawan</h2>
+        <div class="section-actions">
+            <button class="btn btn-primary" onclick="Payroll.loadPeriods()">
+                📅 Muat Periode
+            </button>
+            <button class="btn btn-secondary" onclick="Payroll.openCreatePeriodModal()">
+                📝 Buat Periode Baru
+            </button>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="summary-grid">
+        <div class="summary-card">
+            <h3>👥 Total Karyawan</h3>
+            <p class="summary-value" id="totalEmployees">-</p>
+        </div>
+        <div class="summary-card">
+            <h3>⏱️ Total Jam Kerja</h3>
+            <p class="summary-value" id="totalHours">-</p>
+        </div>
+        <div class="summary-card">
+            <h3>💵 Gaji Regular</h3>
+            <p class="summary-value" id="totalRegularPay">-</p>
+        </div>
+        <div class="summary-card">
+            <h3>🌙 Gaji Lembur</h3>
+            <p class="summary-value" id="totalOvertimePay">-</p>
+        </div>
+        <div class="summary-card">
+            <h3>💰 Total Gaji</h3>
+            <p class="summary-value" id="totalPay">-</p>
+        </div>
+        <div class="summary-card">
+            <h3>✅ Sudah Dibayar</h3>
+            <p class="summary-value" id="totalPaid">-</p>
+        </div>
+        <div class="summary-card">
+            <h3>⏳ Menunggu Pembayaran</h3>
+            <p class="summary-value" id="pendingPayment">-</p>
+        </div>
+    </div>
+
+    <!-- Payroll Periods Table -->
+    <div class="card">
+        <h3>📅 Periode Pembayaran</h3>
+        <div id="payrollPeriodsTable">
+            <p class="loading-text">Memuat periode pembayaran...</p>
+        </div>
+    </div>
+
+    <!-- Payroll Details -->
+    <div id="payrollDetailsSection" style="display: none;">
+        <div class="card">
+            <div class="section-header">
+                <h3>📋 Detail Pembayaran</h3>
+                <div class="section-actions">
+                    <button class="btn btn-primary" onclick="Payroll.exportPayroll()">
+                        📥 Export Data
+                    </button>
+                    <button class="btn btn-secondary" onclick="document.getElementById('payrollDetailsSection').style.display='none'">
+                        ✕ Tutup
+                    </button>
+                </div>
+            </div>
+
+            <table class="payroll-table">
+                <thead>
+                    <tr>
+                        <th>Nama Karyawan</th>
+                        <th>ID Karyawan</th>
+                        <th>Hari Kerja</th>
+                        <th>Total Jam</th>
+                        <th>Jam Regular</th>
+                        <th>Jam Lembur</th>
+                        <th>Jam Dibayar</th>
+                        <th>Gaji Regular</th>
+                        <th>Gaji Lembur</th>
+                        <th>Total Gaji</th>
+                        <th>Status</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="payrollDetailsTableBody">
+                    <tr>
+                        <td colspan="13" class="text-center">Pilih periode pembayaran untuk melihat detail</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
