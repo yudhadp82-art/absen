@@ -1,20 +1,23 @@
 {
   "name": "absensi-karyawan-backend",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Backend API untuk Sistem Absensi Karyawan dengan GPS & Supabase",
   "main": "server-supabase.js",
   "scripts": {
     "dev": "vercel dev --yes --scope yudhadp82s-projects",
     "start": "node server-supabase.js",
     "start:local": "node server.js",
-    "deploy": "vercel"
+    "deploy": "vercel",
+    "test:context7": "node lib/context7.examples.js"
   },
   "keywords": [
     "attendance",
     "absensi",
     "gps",
     "employee",
-    "supabase"
+    "supabase",
+    "context7",
+    "documentation"
   ],
   "author": "",
   "license": "MIT",
