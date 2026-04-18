@@ -788,18 +788,23 @@ const Payslip = {
             const pageH = doc.internal.pageSize.getHeight();
             const pageMargin = 6;
             const gap = 4;
-            const slipW = (pageW - pageMargin * 2 - gap) / 2;
-            const slipH = (pageH - pageMargin * 2 - gap) / 2;
+            const slipsPerPage = 8;
 
-            const positions = [
-                { x: pageMargin, y: pageMargin },
-                { x: pageMargin + slipW + gap, y: pageMargin },
-                { x: pageMargin, y: pageMargin + slipH + gap },
-                { x: pageMargin + slipW + gap, y: pageMargin + slipH + gap }
-            ];
+            // Calculate dimensions for 8 vertical slips per page
+            const slipW = pageW - pageMargin * 2;
+            const slipH = (pageH - pageMargin * 2 - (slipsPerPage - 1) * gap) / slipsPerPage;
+
+            // Generate 8 vertical positions
+            const positions = [];
+            for (let i = 0; i < slipsPerPage; i++) {
+                positions.push({
+                    x: pageMargin,
+                    y: pageMargin + i * (slipH + gap)
+                });
+            }
 
             for (let i = 0; i < allSlipsData.length; i++) {
-                const posIdx = i % 4;
+                const posIdx = i % slipsPerPage;
                 if (i > 0 && posIdx === 0) {
                     doc.addPage();
                 }
@@ -810,7 +815,7 @@ const Payslip = {
             doc.save('Slip-Insentif-Semua-' + startDate + '_' + endDate + '.pdf');
 
             App.hideLoading();
-            App.showToast(allSlipsData.length + ' slip berhasil diunduh sebagai PDF (' + Math.ceil(allSlipsData.length / 4) + ' halaman)', 'success');
+            App.showToast(allSlipsData.length + ' slip berhasil diunduh sebagai PDF (' + Math.ceil(allSlipsData.length / 8) + ' halaman)', 'success');
 
         } catch (error) {
             App.hideLoading();
