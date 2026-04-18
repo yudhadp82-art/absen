@@ -3,6 +3,64 @@
 
 const { createClient } = require('@supabase/supabase-js');
 
+function getDayRange(date) {
+  const start = `${date}T00:00:00.000Z`;
+  const endDate = new Date(`${date}T00:00:00.000Z`);
+  endDate.setUTCDate(endDate.getUTCDate() + 1);
+  return {
+    start,
+    end: endDate.toISOString()
+  };
+}
+
+function buildDailySummary(records, employeesById, reportDate) {
+  const summaryByEmployee = new Map();
+
+  for (const record of records) {
+    const employee = employeesById[record.employee_id] || {};
+    const existing = summaryByEmployee.get(record.employee_id) || {
+      employee_id: record.employee_id,
+      employee_name: employee.employee_name || record.employee_name,
+      department: employee.department || null,
+      position: employee.position || null,
+      email: employee.email || null,
+      attendance_date: reportDate,
+      checkin_time: null,
+      checkout_time: null,
+      checkin_latitude: null,
+      checkin_longitude: null,
+      checkout_latitude: null,
+      checkout_longitude: null,
+      checkin_count: 0,
+      checkout_count: 0
+    };
+
+    if (record.type === 'checkin') {
+      existing.checkin_count += 1;
+      if (!existing.checkin_time || new Date(record.created_at) > new Date(existing.checkin_time)) {
+        existing.checkin_time = record.created_at;
+        existing.checkin_latitude = record.latitude;
+        existing.checkin_longitude = record.longitude;
+      }
+    }
+
+    if (record.type === 'checkout') {
+      existing.checkout_count += 1;
+      if (!existing.checkout_time || new Date(record.created_at) > new Date(existing.checkout_time)) {
+        existing.checkout_time = record.created_at;
+        existing.checkout_latitude = record.latitude;
+        existing.checkout_longitude = record.longitude;
+      }
+    }
+
+    summaryByEmployee.set(record.employee_id, existing);
+  }
+
+  return Array.from(summaryByEmployee.values()).sort((left, right) => {
+    return (left.employee_name || '').localeCompare(right.employee_name || '');
+  });
+}
+
 export default async function handler(req, res) {
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -35,6 +93,7 @@ export default async function handler(req, res) {
 
       // Default to today if no date provided
       const reportDate = date || new Date().toISOString().split('T')[0];
+      const { start, end } = getDayRange(reportDate);
 
       // If employeeId is provided, get single employee report
       if (employeeId) {
@@ -42,8 +101,8 @@ export default async function handler(req, res) {
           .from('attendance')
           .select('*')
           .eq('employee_id', employeeId)
-          .gte('created_at', `${reportDate}T00:00:00.000Z`)
-          .lte('created_at', `${reportDate}T23:59:59.999Z`)
+          .gte('created_at', start)
+          .lt('created_at', end)
           .order('created_at', { ascending: true });
 
         if (error) {
@@ -75,18 +134,29 @@ export default async function handler(req, res) {
         });
       }
 
-      // Get daily summary for all or filtered employees
-      let queryBuilder = supabase
-        .from('daily_attendance_summary')
-        .select('*')
-        .eq('attendance_date', reportDate)
-        .order('employee_name', { ascending: true });
+      const { data: employees, error: employeesError } = await supabase
+        .from('employees')
+        .select('employee_id, employee_name, department, position, email');
 
-      if (department) {
-        queryBuilder = queryBuilder.eq('department', department);
+      if (employeesError && department) {
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to fetch employee metadata',
+          details: employeesError.message
+        });
       }
 
-      const { data, error } = await queryBuilder;
+      const employeesById = Object.fromEntries(
+        (employees || []).map((employee) => [employee.employee_id, employee])
+      );
+
+      const { data: attendance, error } = await supabase
+        .from('attendance')
+        .select('*')
+        .gte('created_at', start)
+        .lt('created_at', end)
+        .order('employee_name', { ascending: true })
+        .order('created_at', { ascending: true });
 
       if (error) {
         return res.status(500).json({
@@ -95,6 +165,12 @@ export default async function handler(req, res) {
           details: error.message
         });
       }
+
+      const filteredAttendance = department
+        ? (attendance || []).filter(r => employeesById[r.employee_id]?.department === department)
+        : (attendance || []);
+
+      const data = buildDailySummary(filteredAttendance, employeesById, reportDate);
 
       // Calculate statistics
       const stats = {

@@ -8,7 +8,9 @@
     "start": "node server-supabase.js",
     "start:local": "node server.js",
     "deploy": "vercel",
-    "test:context7": "node lib/context7.examples.js"
+    "test:context7": "node lib/context7.test.js",
+    "context7:resolve": "node scripts/context7-cli.js --mode resolve",
+    "context7:docs": "node scripts/context7-cli.js --mode docs"
   },
   "keywords": [
     "attendance",
@@ -25,6 +27,7 @@
     "@supabase/supabase-js": "^2.39.0",
     "cors": "^2.8.6",
     "dotenv": "^16.3.1",
-    "express": "^4.22.1"
+    "express": "^4.22.1",
+    "xlsx": "^0.18.5"
   }
 }

@@ -44,12 +44,20 @@ const API = {
         let endpoint = '/attendance?' + new Date().getTime();
         const params = new URLSearchParams();
         if (filters.date) params.append('date', filters.date);
+        if (filters.startDate) params.append('startDate', filters.startDate);
+        if (filters.endDate) params.append('endDate', filters.endDate);
+        if (filters.employeeId) params.append('employeeId', filters.employeeId);
         if (filters.limit) params.append('limit', filters.limit);
         if (params.toString()) endpoint += '&' + params.toString();
         return this.request(endpoint);
     },
     async getDailyReport(date) {
         return this.request('/report/daily?date=' + date + '&_=' + new Date().getTime());
+    },
+    async getRangeReport(startDate, endDate, employeeId = '') {
+        let url = `/report/daily?mode=range&startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}&_=${new Date().getTime()}`;
+        if (employeeId) url += `&employeeId=${encodeURIComponent(employeeId)}`;
+        return this.request(url);
     },
     formatTime(dateStr) {
         return new Date(dateStr).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
@@ -73,5 +81,17 @@ const API = {
         a.href = URL.createObjectURL(blob);
         a.download = filename + '.csv';
         a.click();
+    },
+    exportToXLSX(data, filename, sheetName = 'Data') {
+        if (!data.length) return;
+        if (typeof XLSX === 'undefined') {
+            throw new Error('Library export XLSX belum termuat');
+        }
+
+        const worksheet = XLSX.utils.json_to_sheet(data);
+        const workbook = XLSX.utils.book_new();
+
+        XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+        XLSX.writeFile(workbook, filename + '.xlsx');
     }
 };

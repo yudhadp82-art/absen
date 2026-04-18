@@ -357,7 +357,7 @@ const Payroll = {
             });
 
             if (response.success) {
-                this.downloadCSV(response.data, `Payroll_${response.data.period_name}`);
+                this.downloadXLSX(response.data, `Payroll_${response.data.period_name}`);
             } else {
                 App.showToast(response.error || 'Gagal mengeksport data', 'error');
             }
@@ -366,35 +366,25 @@ const Payroll = {
         }
     },
 
-    // Download CSV
-    downloadCSV(data, filename) {
-        const headers = ['Nama Karyawan', 'ID Karyawan', 'Email', 'Hari Kerja', 'Total Jam', 'Jam Regular', 'Jam Lembur', 'Jam Dibayar', 'Gaji Regular', 'Gaji Lembur', 'Total Gaji', 'Status Pembayaran'];
+    // Download XLSX
+    downloadXLSX(data, filename) {
+        const exportData = data.map(detail => ({
+            Nama_Karyawan: detail.employee_name,
+            ID_Karyawan: detail.employee_id,
+            Email: detail.email || '',
+            Hari_Kerja: detail.work_days,
+            Total_Jam: detail.total_work_hours,
+            Jam_Regular: detail.regular_hours,
+            Jam_Lembur: detail.overtime_hours,
+            Jam_Dibayar: detail.paid_hours,
+            Gaji_Regular: detail.regular_pay,
+            Gaji_Lembur: detail.overtime_pay,
+            Total_Gaji: detail.total_pay,
+            Status_Pembayaran: this.formatPaymentStatus(detail.payment_status)
+        }));
 
-        const rows = data.map(detail => [
-            detail.employee_name,
-            detail.employee_id,
-            detail.email || '',
-            detail.work_days,
-            detail.total_work_hours,
-            detail.regular_hours,
-            detail.overtime_hours,
-            detail.paid_hours,
-            detail.regular_pay,
-            detail.overtime_pay,
-            detail.total_pay,
-            this.formatPaymentStatus(detail.payment_status)
-        ]);
-
-        // Add header
-        const csvContent = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
-
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${filename}.csv`;
-        a.click();
-        window.URL.revokeObjectURL(url);
+        API.exportToXLSX(exportData, filename, 'Payroll');
+        App.showToast('Data payroll XLSX berhasil diunduh', 'success');
     },
 
     // Format helpers

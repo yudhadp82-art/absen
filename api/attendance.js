@@ -7,10 +7,15 @@ import { corsHeaders } from '../lib/cors.js';
 
 // Initialize Supabase client
 const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_ANON_KEY;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const supabase = (supabaseUrl && supabaseKey) 
-  ? createClient(supabaseUrl, supabaseKey)
+const supabase = (supabaseUrl && supabaseAnonKey) 
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null;
+
+const supabaseWrite = (supabaseUrl && (supabaseServiceRoleKey || supabaseAnonKey))
+  ? createClient(supabaseUrl, supabaseServiceRoleKey || supabaseAnonKey)
   : null;
 
 // Helper to check Supabase configuration
@@ -27,9 +32,23 @@ function checkSupabase() {
   return null;
 }
 
+function checkSupabaseWrite() {
+  if (!supabaseWrite) {
+    return Response.json({
+      success: false,
+      error: 'Supabase write credentials not configured'
+    }, {
+      status: 500,
+      headers: corsHeaders
+    });
+  }
+  return null;
+}
+
 // GET /api/attendance - Ambil data absensi
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
+  const id = searchParams.get('id');
   const employeeId = searchParams.get('employeeId');
   const date = searchParams.get('date');
   const limit = parseInt(searchParams.get('limit') || '100');
@@ -42,8 +61,13 @@ export async function GET(request) {
     let queryBuilder = supabase
       .from('attendance')
       .select('*')
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+      .order('created_at', { ascending: false });
+
+    if (id) {
+      queryBuilder = queryBuilder.eq('id', id).limit(1);
+    } else {
+      queryBuilder = queryBuilder.range(offset, offset + limit - 1);
+    }
 
     if (employeeId) {
       queryBuilder = queryBuilder.eq('employee_id', employeeId);
@@ -83,7 +107,7 @@ export async function GET(request) {
       }
     }
 
-    const transformedData = data.map(record => ({
+    const transformedData = (data || []).map(record => ({
       id: record.id,
       employeeId: record.employee_id,
       employeeName: record.employee_name,
@@ -98,6 +122,15 @@ export async function GET(request) {
       timestamp: record.created_at,
       deviceId: record.device_id
     }));
+
+    if (id) {
+      return Response.json({
+        success: true,
+        data: transformedData[0] || null
+      }, {
+        headers: corsHeaders
+      });
+    }
 
     return Response.json({
       success: true,
@@ -122,7 +155,7 @@ export async function GET(request) {
 
 // POST /api/attendance - Check-in / Check-out
 export async function POST(request) {
-  const supabaseError = checkSupabase();
+  const supabaseError = checkSupabaseWrite();
   if (supabaseError) return supabaseError;
 
   try {
@@ -130,7 +163,7 @@ export async function POST(request) {
     const {
       employeeId,
       employeeName,
-      type, // 'checkin' or 'checkout'
+      type, // 'checkin', 'checkout', or 'overtime'
       latitude,
       longitude,
       accuracy,
@@ -150,10 +183,10 @@ export async function POST(request) {
       });
     }
 
-    if (type !== 'checkin' && type !== 'checkout') {
+    if (!['checkin', 'checkout', 'overtime'].includes(type)) {
       return Response.json({
         success: false,
-        error: 'Type must be either "checkin" or "checkout"'
+        error: 'Type must be one of "checkin", "checkout", or "overtime"'
       }, {
         status: 400,
         headers: corsHeaders
@@ -175,7 +208,7 @@ export async function POST(request) {
     }
 
     // Insert into Supabase
-    const { data, error } = await supabase
+    const { data, error } = await supabaseWrite
       .from('attendance')
       .insert([
         {
@@ -216,7 +249,7 @@ export async function POST(request) {
 
     return Response.json({
       success: true,
-      message: `${type === 'checkin' ? 'Check-in' : 'Check-out'} berhasil`,
+      message: `${type === 'checkin' ? 'Check-in' : type === 'checkout' ? 'Check-out' : 'Lembur'} berhasil`,
       data: transformedData
     }, {
       status: 201,
@@ -236,11 +269,178 @@ export async function POST(request) {
   }
 }
 
+// PUT /api/attendance?id=... - Update attendance record
+export async function PUT(request) {
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get('id');
+
+  const supabaseError = checkSupabaseWrite();
+  if (supabaseError) return supabaseError;
+
+  if (!id) {
+    return Response.json({
+      success: false,
+      error: 'Attendance ID is required'
+    }, {
+      status: 400,
+      headers: corsHeaders
+    });
+  }
+
+  try {
+    const body = await request.json();
+    const {
+      type,
+      timestamp,
+      employeeId,
+      employeeName,
+      latitude,
+      longitude,
+      address
+    } = body;
+
+    const updateData = {};
+    if (type) updateData.type = type;
+    if (timestamp) updateData.created_at = timestamp;
+    if (employeeId) updateData.employee_id = employeeId;
+    if (employeeName) updateData.employee_name = employeeName;
+    if (latitude !== undefined) updateData.latitude = latitude;
+    if (longitude !== undefined) updateData.longitude = longitude;
+    if (address !== undefined) updateData.address = address;
+
+    const { data, error } = await supabaseWrite
+      .from('attendance')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (!data) {
+      const { data: existingRecord, error: existingError } = await supabase
+        .from('attendance')
+        .select('id')
+        .eq('id', id)
+        .maybeSingle();
+
+      if (existingError) throw existingError;
+
+      return Response.json({
+        success: false,
+        error: existingRecord
+          ? 'Attendance update blocked by Supabase RLS policy'
+          : 'Attendance record not found',
+        hint: existingRecord
+          ? 'Add an UPDATE policy on attendance or configure SUPABASE_SERVICE_ROLE_KEY in Vercel'
+          : undefined
+      }, {
+        status: existingRecord ? 403 : 404,
+        headers: corsHeaders
+      });
+    }
+
+    return Response.json({
+      success: true,
+      message: 'Attendance record updated successfully',
+      data: data
+    }, {
+      headers: corsHeaders
+    });
+
+  } catch (error) {
+    console.error('Attendance PUT Error:', error);
+    return Response.json({
+      success: false,
+      error: 'Internal Server Error',
+      message: error.message
+    }, {
+      status: 500,
+      headers: corsHeaders
+    });
+  }
+}
+
+// DELETE /api/attendance?id=... - Delete attendance record
+export async function DELETE(request) {
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get('id');
+  const employeeId = searchParams.get('employeeId');
+  const date = searchParams.get('date');
+
+  const supabaseError = checkSupabaseWrite();
+  if (supabaseError) return supabaseError;
+
+  if (!id && !(employeeId && date)) {
+    return Response.json({
+      success: false,
+      error: 'Attendance ID or employeeId + date is required'
+    }, {
+      status: 400,
+      headers: corsHeaders
+    });
+  }
+
+  try {
+    if (employeeId && date) {
+      const startDate = new Date(date);
+      startDate.setHours(0, 0, 0, 0);
+
+      const endDate = new Date(date);
+      endDate.setHours(23, 59, 59, 999);
+
+      const { count, error } = await supabaseWrite
+        .from('attendance')
+        .delete({ count: 'exact' })
+        .eq('employee_id', employeeId)
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString());
+
+      if (error) throw error;
+
+      return Response.json({
+        success: true,
+        message: 'Attendance records deleted successfully',
+        deletedCount: count || 0
+      }, {
+        headers: corsHeaders
+      });
+    }
+
+    const { error } = await supabaseWrite
+      .from('attendance')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+
+    return Response.json({
+      success: true,
+      message: 'Attendance record deleted successfully'
+    }, {
+      headers: corsHeaders
+    });
+
+  } catch (error) {
+    console.error('Attendance DELETE Error:', error);
+    return Response.json({
+      success: false,
+      error: 'Internal Server Error',
+      message: error.message
+    }, {
+      status: 500,
+      headers: corsHeaders
+    });
+  }
+}
+
 // OPTIONS untuk CORS preflight
 export async function OPTIONS() {
   return new Response(null, {
     status: 200,
-    headers: corsHeaders
+    headers: {
+      ...corsHeaders,
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS'
+    }
   });
 }
-

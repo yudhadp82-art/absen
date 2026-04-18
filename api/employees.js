@@ -70,6 +70,7 @@ export default async function handler(req, res) {
         employeeName,
         email,
         department,
+        address,
         position,
         phone,
         isActive
@@ -83,7 +84,7 @@ export default async function handler(req, res) {
         });
       }
 
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('employees')
         .insert([
           {
@@ -91,6 +92,7 @@ export default async function handler(req, res) {
             employee_name: employeeName,
             email: email || null,
             department: department || null,
+            address: address || null,
             position: position || null,
             phone: phone || null,
             is_active: isActive !== undefined ? isActive : true
@@ -98,6 +100,28 @@ export default async function handler(req, res) {
         ])
         .select()
         .single();
+
+      // Robust check for missing column 'address'
+      if (error && error.message.includes('column') && error.message.includes('address')) {
+        console.warn('Column "address" not found, retrying without it...');
+        const retryResult = await supabase
+          .from('employees')
+          .insert([
+            {
+              employee_id: employeeId,
+              employee_name: employeeName,
+              email: email || null,
+              department: department || null,
+              position: position || null,
+              phone: phone || null,
+              is_active: isActive !== undefined ? isActive : true
+            }
+          ])
+          .select()
+          .single();
+        data = retryResult.data;
+        error = retryResult.error;
+      }
 
       if (error) {
         return res.status(500).json({
@@ -122,6 +146,7 @@ export default async function handler(req, res) {
         employeeName,
         email,
         department,
+        address,
         position,
         phone,
         isActive
@@ -145,6 +170,7 @@ export default async function handler(req, res) {
         employee_name: employeeName,
         email: email || null,
         department: department || null,
+        address: address || null,
         position: position || null,
         phone: phone || null,
         is_active: isActive !== undefined ? isActive : true,

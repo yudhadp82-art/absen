@@ -1,7 +1,7 @@
 // Express Server dengan Supabase Database + Static Web Serving
 // Backend API untuk Sistem Absensi Karyawan - Web App Version
 
-require('dotenv').config();
+require('./lib/load-env').loadLocalEnv();
 const express = require('express');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
@@ -64,7 +64,7 @@ app.get('/api/health', async (req, res) => {
 // Get attendance history
 app.get('/api/attendance', async (req, res) => {
   try {
-    const { employeeId, date, limit = 100, offset = 0 } = req.query;
+    const { employeeId, date, startDate, endDate, limit = 100, offset = 0 } = req.query;
 
     let query = supabase
       .from('attendance')
@@ -81,14 +81,26 @@ app.get('/api/attendance', async (req, res) => {
     // Filter by date if provided
     if (date) {
       // Filter by date range for the entire day
-      const startDate = new Date(date);
-      startDate.setHours(0, 0, 0, 0);
+      const s = new Date(date);
+      s.setHours(0, 0, 0, 0);
 
-      const endDate = new Date(date);
-      endDate.setHours(23, 59, 59, 999);
+      const e = new Date(date);
+      e.setHours(23, 59, 59, 999);
 
-      query = query.gte('created_at', startDate.toISOString())
-                   .lte('created_at', endDate.toISOString());
+      query = query.gte('created_at', s.toISOString())
+                   .lte('created_at', e.toISOString());
+    }
+
+    if (startDate) {
+      const s = new Date(startDate);
+      s.setHours(0, 0, 0, 0);
+      query = query.gte('created_at', s.toISOString());
+    }
+
+    if (endDate) {
+      const e = new Date(endDate);
+      e.setHours(23, 59, 59, 999);
+      query = query.lte('created_at', e.toISOString());
     }
 
     const { data, error, count } = await query;

@@ -12,6 +12,7 @@ Sistem absensi karyawan dengan GPS location tracking dan database Supabase. Ters
 - 🎨 **Modern UI** dengan Material Design inspired
 - 📊 **Dashboard Supabase** untuk monitoring data
 - 🔐 **Row Level Security** untuk production
+- 📚 **Context7 Workflow** untuk lookup dokumentasi library dari CLI, API, dan admin dashboard
 
 ## 🚀 Quick Start
 
@@ -68,7 +69,12 @@ absen/
 │   └── schema.sql                   # Database schema
 │
 ├── 📁 lib/
-│   └── cors.js
+│   ├── cors.js
+│   ├── context7.js
+│   └── context7-service.js
+│
+├── 📁 scripts/
+│   └── context7-cli.js
 │
 ├── 📁 android/                      # Android Native App
 │   ├── app/
@@ -183,6 +189,7 @@ absen/
    ```env
    SUPABASE_URL=https://your-project.supabase.co
    SUPABASE_ANON_KEY=your-anon-key
+   CONTEXT7_API_KEY=ctx7sk-your-context7-key
    ```
 
 6. **Start server:**
@@ -198,6 +205,33 @@ absen/
    ```bash
    start-express-server.bat
    ```
+
+### Workflow Context7
+
+Context7 sekarang terintegrasi ke repo ini dalam tiga jalur:
+
+- `npm run context7:resolve -- --library "Next.js" --query "app router caching"` untuk cari library ID terbaik dari terminal
+- `npm run context7:docs -- --library "Supabase" --query "javascript select rows"` untuk ambil dokumentasi langsung dari terminal
+- `POST /api/context7` untuk admin dashboard atau tooling internal
+
+Contoh request API:
+
+```bash
+curl -X POST http://localhost:3000/api/context7 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "mode": "docs",
+    "libraryName": "Next.js",
+    "query": "server actions"
+  }'
+```
+
+Payload yang didukung:
+
+- `mode: "resolve"` butuh `libraryName` dan `query`
+- `mode: "docs"` butuh `query` plus salah satu dari `libraryName` atau `libraryId`
+
+Semua workflow Context7 membaca `CONTEXT7_API_KEY` dari environment server, jadi tidak ada API key yang diekspos ke frontend.
 
 ---
 

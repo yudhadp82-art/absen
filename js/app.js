@@ -1,61 +1,24 @@
-// ========================================
-// Main Application Logic
-// ========================================
-
 const App = {
-    // State
     state: {
         employeeId: '',
         employeeName: '',
-        currentLocation: null,
-        isSubmitting: false
+        activeTab: 'checkin',
+        todayRecords: [],
+        todayEmployeeMap: {}
     },
 
     init() {
-        console.log('🚀 Absensi Karyawan App initialized');
-        this.loadEmployeeInfo();
+        console.log('Absensi Karyawan App initialized');
         this.bindEvents();
         this.loadTodayHistory();
         this.loadEmployees();
     },
 
-
-    /**
-     * Load employees
-     */
     async loadEmployees() {
         await Employees.loadEmployees();
     },
 
-    /**
-     * Load saved employee info
-     */
-    loadEmployeeInfo() {
-        const info = Storage.getEmployeeInfo();
-        this.state.employeeId = info.id;
-        this.state.employeeName = info.name;
-
-        if (info.id) {
-            document.getElementById('employeeId').value = info.id;
-        }
-        if (info.name) {
-            document.getElementById('employeeName').value = info.name;
-        }
-    },
-
-    /**
-     * Bind event listeners
-     */
     bindEvents() {
-        // Save employee info button
-        const saveInfoBtn = document.getElementById('saveInfoBtn');
-        if (saveInfoBtn) {
-            saveInfoBtn.addEventListener('click', () => {
-                this.saveEmployeeInfo();
-            });
-        }
-
-        // Manual time toggle
         const manualTimeToggle = document.getElementById('manualTimeToggle');
         const manualTimeContainer = document.getElementById('manualTimeContainer');
         const manualTimeInput = document.getElementById('manualTimeInput');
@@ -64,7 +27,6 @@ const App = {
             manualTimeToggle.addEventListener('change', (e) => {
                 manualTimeContainer.style.display = e.target.checked ? 'block' : 'none';
                 if (e.target.checked) {
-                    // Set default to current time in local format
                     const now = new Date();
                     const localISO = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
                     manualTimeInput.value = localISO;
@@ -72,146 +34,112 @@ const App = {
             });
         }
 
-        // Check-in button
         document.getElementById('checkInBtn').addEventListener('click', () => {
             this.handleAttendance('checkin');
         });
 
-        // Check-out button
         document.getElementById('checkOutBtn').addEventListener('click', () => {
-            this.handleAttendance('checkout');
+            const employeeId = document.getElementById('checkoutEmployeeSelect').value;
+            this.handleSelectAttendance('checkout', employeeId);
         });
 
+        document.getElementById('overtimeBtn').addEventListener('click', () => {
+            const employeeId = document.getElementById('overtimeEmployeeSelect').value;
+            this.handleSelectAttendance('overtime', employeeId);
+        });
 
+        document.querySelectorAll('.attendance-tab').forEach((button) => {
+            button.addEventListener('click', () => {
+                this.switchTab(button.dataset.tab);
+            });
+        });
+
+        document.getElementById('checkoutEmployeeSelect').addEventListener('change', (event) => {
+            this.updateSelectionInfo('checkout', event.target.value);
+        });
+
+        document.getElementById('overtimeEmployeeSelect').addEventListener('change', (event) => {
+            this.updateSelectionInfo('overtime', event.target.value);
+        });
     },
 
-    /**
-     * Save employee info
-     */
-    saveEmployeeInfo() {
-        const id = document.getElementById('employeeId').value.trim();
-        const name = document.getElementById('employeeName').value.trim();
+    switchTab(tab) {
+        this.state.activeTab = tab;
 
-        if (!id || !name) {
-            this.showToast('Harap isi ID dan Nama karyawan', 'error');
-            return;
+        document.querySelectorAll('.attendance-tab').forEach((button) => {
+            button.classList.toggle('active', button.dataset.tab === tab);
+        });
+
+        document.getElementById('attendancePanelCheckin').classList.toggle('active', tab === 'checkin');
+        document.getElementById('attendancePanelCheckout').classList.toggle('active', tab === 'checkout');
+        document.getElementById('attendancePanelOvertime').classList.toggle('active', tab === 'overtime');
+    },
+
+    getActionConfig(actionType) {
+        const map = {
+            checkin: {
+                submitType: 'checkin',
+                loadingText: 'Memproses absensi masuk...',
+                successText: 'Absensi masuk berhasil'
+            },
+            checkout: {
+                submitType: 'checkout',
+                loadingText: 'Memproses absensi keluar...',
+                successText: 'Absensi keluar berhasil'
+            },
+            overtime: {
+                submitType: 'overtime',
+                loadingText: 'Memproses form lembur...',
+                successText: 'Form lembur berhasil disimpan'
+            }
+        };
+
+        return map[actionType] || map.checkin;
+    },
+
+    getManualTimestamp() {
+        const manualTimeToggle = document.getElementById('manualTimeToggle');
+        const manualTimeInput = document.getElementById('manualTimeInput');
+
+        if (manualTimeToggle && manualTimeToggle.checked && manualTimeInput.value) {
+            return new Date(manualTimeInput.value).toISOString();
         }
 
-        this.state.employeeId = id;
-        this.state.employeeName = name;
-
-        Storage.saveEmployeeInfo(id, name);
-        this.showToast('Info karyawan berhasil disimpan', 'success');
+        return null;
     },
 
-    /**
-     * Check location permission status
-     */
-    checkLocationPermission() {
-        if (!LocationManager.isSupported()) {
-            this.showStatus(
-                'Geolocation tidak didukung di browser ini. Gunakan Chrome, Firefox, atau Safari.',
-                'error'
-            );
-            return;
-        }
-    },
+    async handleAttendance(actionType, employeeOverride = null) {
+        const config = this.getActionConfig(actionType);
+        const employeeId = employeeOverride?.employeeId || this.state.employeeId;
+        const employeeName = employeeOverride?.employeeName || this.state.employeeName;
 
-    /**
-     * Handle get location
-     */
-    async handleGetLocation() {
-        // Feature removed
-        return;
-    },
-
-    /**
-     * Display location info
-     */
-    displayLocation(location) {
-        // Hide status, show info
-        document.getElementById('locationStatus').style.display = 'none';
-        document.getElementById('locationInfo').style.display = 'block';
-        document.getElementById('getLocationBtn').style.display = 'none';
-
-        // Update details
-        document.getElementById('latitude').textContent =
-            LocationManager.formatCoordinate(location.latitude, 'lat');
-        document.getElementById('longitude').textContent =
-            LocationManager.formatCoordinate(location.longitude, 'lon');
-        document.getElementById('accuracy').textContent =
-            `~${Math.round(location.accuracy)} meter`;
-
-        // Check accuracy
-        if (location.accuracy > CONFIG.APP.MIN_LOCATION_ACCURACY) {
-            this.showStatus(
-                `Akurasi lokasi kurang baik (${Math.round(location.accuracy)}m). Coba di area terbuka.`,
-                'warning'
-            );
-        }
-    },
-
-    /**
-     * Enable attendance buttons
-     */
-    enableAttendanceButtons() {
-        document.getElementById('checkInBtn').disabled = false;
-        document.getElementById('checkOutBtn').disabled = false;
-    },
-
-    /**
-     * Handle attendance (check-in/check-out)
-     */
-    async handleAttendance(type) {
-        // Validate employee info
-        if (!this.state.employeeId || !this.state.employeeName) {
+        if (!employeeId || !employeeName) {
             this.showToast('Harap pilih karyawan terlebih dahulu', 'error');
             return;
         }
 
-        // Show loading
-        const actionText = type === 'checkin' ? 'Check-in' : 'Check-out';
-        this.showLoading(`Memproses ${actionText}...`);
+        this.showLoading(config.loadingText);
 
-        // Use dummy location since tracking is disabled
         const dummyLocation = {
             latitude: 0,
             longitude: 0,
             accuracy: 0
         };
 
-        // Check if manual time is used
-        const manualTimeToggle = document.getElementById('manualTimeToggle');
-        const manualTimeInput = document.getElementById('manualTimeInput');
-        let timestamp = null;
-
-        if (manualTimeToggle && manualTimeToggle.checked && manualTimeInput.value) {
-            timestamp = new Date(manualTimeInput.value).toISOString();
-        }
-
         try {
-            // Submit attendance
             const response = await API.submitAttendance(
-                this.state.employeeId,
-                this.state.employeeName,
-                type,
+                employeeId,
+                employeeName,
+                config.submitType,
                 dummyLocation,
-                timestamp
+                this.getManualTimestamp()
             );
 
-            // Hide loading
             this.hideLoading();
+            this.showStatus(`${config.successText}\n${response.message}`, 'success');
+            this.showToast(`${employeeName} - ${config.successText}`);
 
-            // Show success
-            this.showStatus(
-                `${actionText} berhasil! 🎉\n${response.message}`,
-                'success'
-            );
-            this.showToast(response.message || `${actionText} berhasil`, 'success');
-
-            // Reload today's history
             await this.loadTodayHistory();
-
         } catch (error) {
             this.hideLoading();
             this.showStatus(error.message, 'error');
@@ -219,30 +147,126 @@ const App = {
         }
     },
 
+    async handleSelectAttendance(actionType, employeeId) {
+        const employee = this.state.todayEmployeeMap[employeeId];
 
-    /**
-     * Load today's history
-     */
+        if (!employeeId || !employee) {
+            this.showToast('Harap pilih karyawan dari daftar', 'error');
+            return;
+        }
+
+        await this.handleAttendance(actionType, {
+            employeeId: employee.employeeId,
+            employeeName: employee.employeeName
+        });
+    },
+
     async loadTodayHistory() {
         try {
             const today = new Date().toISOString().split('T')[0];
-            const response = await API.getAttendanceHistory(
-                this.state.employeeId || null,
-                today
-            );
+            const response = await API.getAttendanceHistory(null, today);
+            const records = response.success ? response.data : [];
 
-            if (response.success && response.data.length > 0) {
-                this.displayTodayHistory(response.data);
-            }
-
+            this.state.todayRecords = records;
+            this.displayTodayHistory(records);
+            this.populateAttendanceSelects(records);
         } catch (error) {
             console.error('Failed to load history:', error);
+            this.displayTodayHistory([]);
+            this.populateAttendanceSelects([]);
         }
     },
 
-    /**
-     * Display today's history
-     */
+    buildTodayEmployeeMap(records) {
+        const employeeMap = {};
+
+        records.forEach((record) => {
+            const key = record.employeeId;
+            if (!key) return;
+
+            if (!employeeMap[key]) {
+                employeeMap[key] = {
+                    employeeId: record.employeeId,
+                    employeeName: record.employeeName,
+                    checkinTime: null,
+                    checkoutTime: null,
+                    overtimeTime: null
+                };
+            }
+
+            if (record.type === 'checkin') {
+                if (!employeeMap[key].checkinTime || new Date(record.timestamp) > new Date(employeeMap[key].checkinTime)) {
+                    employeeMap[key].checkinTime = record.timestamp;
+                }
+            }
+
+            if (record.type === 'checkout') {
+                if (!employeeMap[key].checkoutTime || new Date(record.timestamp) > new Date(employeeMap[key].checkoutTime)) {
+                    employeeMap[key].checkoutTime = record.timestamp;
+                }
+            }
+
+            if (record.type === 'overtime') {
+                if (!employeeMap[key].overtimeTime || new Date(record.timestamp) > new Date(employeeMap[key].overtimeTime)) {
+                    employeeMap[key].overtimeTime = record.timestamp;
+                }
+            }
+        });
+
+        return employeeMap;
+    },
+
+    populateAttendanceSelects(records) {
+        const employeeMap = this.buildTodayEmployeeMap(records);
+        this.state.todayEmployeeMap = employeeMap;
+
+        const employees = Object.values(employeeMap)
+            .filter((employee) => employee.checkinTime && !employee.checkoutTime)
+            .sort((a, b) => a.employeeName.localeCompare(b.employeeName, 'id-ID'));
+
+        this.populateAttendanceSelect('checkoutEmployeeSelect', employees, 'Pilih karyawan yang sudah masuk');
+        this.populateAttendanceSelect('overtimeEmployeeSelect', employees, 'Pilih karyawan untuk lembur');
+
+        this.updateSelectionInfo('checkout', document.getElementById('checkoutEmployeeSelect').value);
+        this.updateSelectionInfo('overtime', document.getElementById('overtimeEmployeeSelect').value);
+    },
+
+    populateAttendanceSelect(selectId, employees, placeholder) {
+        const select = document.getElementById(selectId);
+        if (!select) return;
+
+        const currentValue = select.value;
+        select.innerHTML = `<option value="">${placeholder}</option>`;
+
+        employees.forEach((employee) => {
+            const option = document.createElement('option');
+            option.value = employee.employeeId;
+            option.textContent = `${employee.employeeName} (${employee.employeeId})`;
+            select.appendChild(option);
+        });
+
+        const hasCurrent = employees.some((employee) => employee.employeeId === currentValue);
+        select.value = hasCurrent ? currentValue : '';
+    },
+
+    updateSelectionInfo(type, employeeId) {
+        const infoId = type === 'checkout' ? 'checkoutEmployeeInfo' : 'overtimeEmployeeInfo';
+        const info = document.getElementById(infoId);
+        const employee = this.state.todayEmployeeMap[employeeId];
+
+        if (!info || !employeeId || !employee) {
+            if (info) info.style.display = 'none';
+            return;
+        }
+
+        info.innerHTML = `
+            <span class="selection-name">${this.escapeHtml(employee.employeeName)}</span>
+            <span class="selection-meta">ID ${this.escapeHtml(employee.employeeId)} • Masuk ${API.formatTime(employee.checkinTime)}</span>
+            ${employee.checkoutTime ? `<span class="selection-meta">Keluar ${API.formatTime(employee.checkoutTime)}</span>` : ''}
+        `;
+        info.style.display = 'flex';
+    },
+
     displayTodayHistory(history) {
         const historyContainer = document.getElementById('todayHistory');
 
@@ -251,46 +275,43 @@ const App = {
             return;
         }
 
-        // Sort by timestamp
         history.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-        // Generate HTML
-        const historyHTML = history.map(record => {
-            const icon = record.type === 'checkin' ? '☀️' : '🌙';
-            const typeLabel = record.type === 'checkin' ? 'Check In' : 'Check Out';
+        historyContainer.innerHTML = history.map((record) => {
+            const typeLabel = record.type === 'checkin' ? 'Masuk' : record.type === 'checkout' ? 'Keluar' : 'Lembur';
+            const itemClass = record.type === 'checkin' ? 'is-checkin' : 'is-checkout';
             const time = API.formatTime(record.timestamp);
 
             return `
-                <div class="history-item">
-                    <div>
+                <div class="history-item ${itemClass}">
+                    <div class="history-main">
                         <span class="history-time">${time}</span>
-                        <span class="history-type">${icon} ${typeLabel}</span>
+                        <span class="history-type">${typeLabel}</span>
                     </div>
+                    <span class="history-name">${this.escapeHtml(record.employeeName || '')}</span>
                 </div>
             `;
         }).join('');
-
-        historyContainer.innerHTML = historyHTML;
     },
 
-    /**
-     * Show loading overlay
-     */
+    escapeHtml(value) {
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    },
+
     showLoading(text = 'Memproses...') {
         document.getElementById('loadingText').textContent = text;
         document.getElementById('loadingOverlay').style.display = 'flex';
     },
 
-    /**
-     * Hide loading overlay
-     */
     hideLoading() {
         document.getElementById('loadingOverlay').style.display = 'none';
     },
 
-    /**
-     * Show status message
-     */
     showStatus(message, type = 'success') {
         const statusSection = document.getElementById('statusSection');
         const statusMessage = document.getElementById('statusMessage');
@@ -299,32 +320,23 @@ const App = {
         statusMessage.innerHTML = message.replace(/\n/g, '<br>');
         statusSection.style.display = 'block';
 
-        // Auto hide after 5 seconds
         setTimeout(() => {
             statusSection.style.display = 'none';
         }, 5000);
     },
 
-    /**
-     * Show toast notification
-     */
-    showToast(message, type = 'info') {
+    showToast(message) {
         const toast = document.getElementById('toast');
         const toastMessage = document.getElementById('toastMessage');
 
         toastMessage.textContent = message;
         toast.style.display = 'block';
 
-        // Auto hide after 3 seconds
         setTimeout(() => {
             toast.style.display = 'none';
         }, 3000);
     }
 };
-
-// ========================================
-// Initialize App on DOM Ready
-// ========================================
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {

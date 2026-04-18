@@ -14,42 +14,46 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- CSS -->
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="/admin/css/style.css">
 </head>
 <body>
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <h2>🎛️ Admin</h2>
-            <button class="close-sidebar" onclick="toggleSidebar()">✕</button>
+            <h2>Admin</h2>
+            <button class="close-sidebar" onclick="toggleSidebar()">X</button>
         </div>
 
         <nav class="sidebar-nav">
             <a href="#dashboard" class="nav-item active" onclick="showSection('dashboard', event)">
-                <span class="nav-icon">📊</span>
+                <span class="nav-icon">DB</span>
                 <span class="nav-text">Dashboard</span>
             </a>
             <a href="#employees" class="nav-item" onclick="showSection('employees', event)">
-                <span class="nav-icon">👥</span>
+                <span class="nav-icon">KR</span>
                 <span class="nav-text">Karyawan</span>
             </a>
             <a href="#attendance" class="nav-item" onclick="showSection('attendance', event)">
-                <span class="nav-icon">📝</span>
+                <span class="nav-icon">AB</span>
                 <span class="nav-text">Absensi</span>
             </a>
             <a href="#reports" class="nav-item" onclick="showSection('reports', event)">
-                <span class="nav-icon">📈</span>
+                <span class="nav-icon">LP</span>
                 <span class="nav-text">Laporan</span>
             </a>
+            <a href="#payslip" class="nav-item" onclick="showSection('payslip', event)">
+                <span class="nav-icon">SG</span>
+                <span class="nav-text">Slip Gaji</span>
+            </a>
             <a href="#context7" class="nav-item" onclick="showSection('context7', event)">
-                <span class="nav-icon">📚</span>
+                <span class="nav-icon">DK</span>
                 <span class="nav-text">Dokumentasi</span>
             </a>
         </nav>
 
         <div class="sidebar-footer">
-            <p>© 2026 Absensi</p>
-            <a href="/">📱 App Karyawan</a>
+            <p>(c) 2026 Absensi</p>
+            <a href="/">App Karyawan</a>
         </div>
     </aside>
 
@@ -57,7 +61,7 @@
     <div class="main-content">
         <!-- Top Bar -->
         <header class="top-bar">
-            <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+            <button class="menu-toggle" onclick="toggleSidebar()">Menu</button>
             <h1>Admin Dashboard</h1>
             <div class="user-info">
                 <span class="user-name">Admin</span>
@@ -69,14 +73,14 @@
             <div class="section-header">
                 <h2>Dashboard</h2>
                 <button class="btn btn-primary" onclick="Dashboard.refresh()">
-                    🔄 Refresh
+                    Refresh
                 </button>
             </div>
 
             <!-- Stats Cards -->
             <div class="stats-grid">
                 <div class="stat-card stat-total">
-                    <div class="stat-icon">👥</div>
+                    <div class="stat-icon">EMP</div>
                     <div class="stat-info">
                         <div class="stat-value" id="totalEmployees">-</div>
                         <div class="stat-label">Total Karyawan</div>
@@ -84,7 +88,7 @@
                 </div>
 
                 <div class="stat-card stat-present">
-                    <div class="stat-icon">✅</div>
+                    <div class="stat-icon">IN</div>
                     <div class="stat-info">
                         <div class="stat-value" id="presentToday">-</div>
                         <div class="stat-label">Hadir Hari Ini</div>
@@ -92,7 +96,7 @@
                 </div>
 
                 <div class="stat-card stat-absent">
-                    <div class="stat-icon">❌</div>
+                    <div class="stat-icon">OUT</div>
                     <div class="stat-info">
                         <div class="stat-value" id="absentToday">-</div>
                         <div class="stat-label">Belum Hadir</div>
@@ -100,7 +104,7 @@
                 </div>
 
                 <div class="stat-card stat-late">
-                    <div class="stat-icon">⏰</div>
+                    <div class="stat-icon">LATE</div>
                     <div class="stat-info">
                         <div class="stat-value" id="lateToday">-</div>
                         <div class="stat-label">Terlambat</div>
@@ -123,20 +127,71 @@
                     <p class="empty-state">Memuat statistik...</p>
                 </div>
             </div>
+
+            <div class="card">
+                <h3>Rekap Periode</h3>
+                <div class="report-filters">
+                    <label for="dashboardStartDate">Dari</label>
+                    <input type="date" id="dashboardStartDate" class="filter-input">
+                    <label for="dashboardEndDate">Sampai</label>
+                    <input type="date" id="dashboardEndDate" class="filter-input">
+                    <button class="btn btn-primary" onclick="Dashboard.loadRangeRecap()">
+                        Tampilkan Rekap
+                    </button>
+                </div>
+
+                <div id="dashboardRecapStats" class="report-stats">
+                    <div class="report-stat">
+                        <div class="report-stat-value">-</div>
+                        <div class="report-stat-label">Menunggu Filter</div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Tanggal</th>
+                                <th>Total Masuk</th>
+                                <th>Total Keluar</th>
+                                <th>Karyawan Hadir</th>
+                                <th>Departemen</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dashboardRecapTableBody">
+                            <tr>
+                                <td colspan="5" class="text-center">Pilih rentang tanggal untuk melihat rekap.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </section>
 
         <!-- Employees Section -->
         <section id="employees-section" class="content-section">
             <div class="section-header">
                 <h2>Management Karyawan</h2>
-                <button class="btn btn-primary" onclick="Employees.showAddModal()">
-                    ➕ Tambah Karyawan
-                </button>
+                <div class="section-actions">
+                    <button class="btn btn-secondary" onclick="Employees.downloadImportTemplate()">
+                        Template Import
+                    </button>
+                    <button class="btn btn-secondary" onclick="Employees.openImportPicker()">
+                        Import XLSX
+                    </button>
+                    <button class="btn btn-secondary" onclick="Employees.exportToXLSX()">
+                        Export XLSX
+                    </button>
+                    <button class="btn btn-primary" onclick="Employees.showAddModal()">
+                        Tambah Karyawan
+                    </button>
+                </div>
             </div>
 
             <!-- Filters -->
             <div class="filters">
-                <input type="text" id="searchEmployee" class="search-input" placeholder="🔍 Cari karyawan...">
+                <input type="text" id="searchEmployee" class="search-input" placeholder="Cari karyawan...">
+                <input type="file" id="employeeImportFile" accept=".xlsx,.xls" style="display: none;" onchange="Employees.handleImportFile(event)">
                 <select id="filterDepartment" class="filter-select">
                     <option value="">Semua Departemen</option>
                     <option value="IT">IT</option>
@@ -165,6 +220,7 @@
                                 <th>Nama</th>
                                 <th>Email</th>
                                 <th>Departemen</th>
+                                <th>Alamat</th>
                                 <th>Posisi</th>
                                 <th>Status</th>
                                 <th>Aksi</th>
@@ -184,14 +240,22 @@
         <section id="attendance-section" class="content-section">
             <div class="section-header">
                 <h2>Data Absensi</h2>
-                <button class="btn btn-secondary" onclick="Attendance.exportToCSV()">
-                    📥 Export CSV
-                </button>
+                <div class="section-actions">
+                    <button class="btn btn-secondary" onclick="Attendance.openImportPicker()">
+                        Import XLSX
+                    </button>
+                    <button class="btn btn-secondary" onclick="Attendance.exportToXLSX()">
+                        Export XLSX
+                    </button>
+                </div>
             </div>
 
             <!-- Filters -->
             <div class="filters">
                 <input type="date" id="filterDate" class="filter-input">
+                <span class="filter-sep">s/d</span>
+                <input type="date" id="filterDateEnd" class="filter-input">
+                <input type="file" id="attendanceImportFile" accept=".xlsx,.xls" style="display: none;" onchange="Attendance.handleImportFile(event)">
                 <select id="filterDept" class="filter-select">
                     <option value="">Semua Departemen</option>
                     <option value="IT">IT</option>
@@ -203,12 +267,10 @@
                     <option value="">Semua Tipe</option>
                     <option value="checkin">Check-In</option>
                     <option value="checkout">Check-Out</option>
+                    <option value="overtime">Lembur</option>
                 </select>
                 <button class="btn btn-primary" onclick="Attendance.applyFilters()">
-                    🔍 Filter
-                </button>
-                <button class="btn btn-secondary" onclick="Attendance.clearFilters()">
-                    ✕ Reset
+                    Filter
                 </button>
             </div>
 
@@ -218,16 +280,18 @@
                     <table class="data-table">
                         <thead>
                             <tr>
-                                <th>Waktu</th>
-                                <th>ID</th>
-                                <th>Nama</th>
-                                <th>Tipe</th>
+                                <th>Karyawan</th>
                                 <th>Departemen</th>
+                                <th>Tanggal</th>
+                                <th>Masuk</th>
+                                <th>Keluar</th>
+                                <th>Lembur</th>
+                                <th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="attendanceTableBody">
                             <tr>
-                                <td colspan="5" class="text-center">Memuat data...</td>
+                                <td colspan="7" class="text-center">Memuat data...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -244,19 +308,19 @@
             <!-- Report Type Selection -->
             <div class="report-types">
                 <button class="report-type-card active" onclick="Reports.showDailyReport()">
-                    <div class="report-icon">📅</div>
+                    <div class="report-icon">DAY</div>
                     <div class="report-title">Harian</div>
                     <div class="report-desc">Laporan per hari</div>
                 </button>
 
                 <button class="report-type-card" onclick="Reports.showWeeklyReport()">
-                    <div class="report-icon">📆</div>
+                    <div class="report-icon">WEEK</div>
                     <div class="report-title">Mingguan</div>
                     <div class="report-desc">Laporan per minggu</div>
                 </button>
 
                 <button class="report-type-card" onclick="Reports.showMonthlyReport()">
-                    <div class="report-icon">📊</div>
+                    <div class="report-icon">MONTH</div>
                     <div class="report-title">Bulanan</div>
                     <div class="report-desc">Laporan per bulan</div>
                 </button>
@@ -272,25 +336,152 @@
                         <label>Tanggal:</label>
                         <input type="date" id="reportDate">
                         <button class="btn btn-primary" onclick="Reports.generateDailyReport()">
-                            📊 Tampilkan
+                            Tampilkan
+                        </button>
+                        <button class="btn btn-secondary" onclick="Reports.printDailyRecap()">
+                            Print PDF Rekapan
                         </button>
                         <button class="btn btn-secondary" onclick="Reports.exportReport()">
-                            📥 Export
+                            Export XLSX
                         </button>
                     </div>
 
                     <div id="dailyReportStats" class="report-stats"></div>
                     <div id="dailyReportContent" class="report-table"></div>
                 </div>
+
+                <div class="card">
+                    <h3>Rekap Periode</h3>
+
+                    <div class="report-filters">
+                        <div class="filter-group">
+                            <label for="reportStartDate">Dari:</label>
+                            <input type="date" id="reportStartDate">
+                        </div>
+                        <div class="filter-group">
+                            <label for="reportEndDate">Sampai:</label>
+                            <input type="date" id="reportEndDate">
+                        </div>
+                        <div class="filter-group">
+                            <label for="reportEmployeeId">Karyawan:</label>
+                            <select id="reportEmployeeId" class="filter-select">
+                                <option value="">Semua Karyawan</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" onclick="Reports.generateRangeReport()">
+                            Tampilkan Rekap
+                        </button>
+                        <button class="btn btn-secondary" onclick="Reports.printRangeRecap()">
+                            Export PDF
+                        </button>
+                        <button class="btn btn-secondary" onclick="Reports.exportRangeReport()">
+                            Export XLSX
+                        </button>
+                    </div>
+
+                    <div id="rangeReportStats" class="report-stats">
+                        <div class="report-stat">
+                            <div class="report-stat-value">-</div>
+                            <div class="report-stat-label">Menunggu Filter</div>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Tanggal</th>
+                                    <th>Total Masuk</th>
+                                    <th>Total Keluar</th>
+                                    <th>Total Lembur</th>
+                                    <th>Karyawan Hadir</th>
+                                    <th>Departemen</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rangeReportTableBody">
+                                <tr>
+                                    <td colspan="6" class="text-center">Pilih rentang tanggal untuk melihat rekap.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h4>Rekap Insentif Per Nama</h4>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Karyawan</th>
+                                    <th>Departemen</th>
+                                    <th>Hari Hadir</th>
+                                    <th>Hari Lembur</th>
+                                    <th>Hari Lengkap</th>
+                                    <th>Jam Kerja Bersih</th>
+                                    <th>Insentif</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rangeEmployeeRecapTableBody">
+                                <tr>
+                                    <td colspan="8" class="text-center">Pilih rentang tanggal untuk melihat rekap insentif per nama.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slip Gaji Section -->
+        <section id="payslip-section" class="content-section">
+            <div class="section-header">
+                <h2>Slip Gaji Karyawan</h2>
+            </div>
+
+            <div class="card">
+                <h3>Buat Slip Insentif</h3>
+                <div class="report-filters">
+                    <div class="filter-group">
+                        <label for="slipStartDate">Dari:</label>
+                        <input type="date" id="slipStartDate" class="filter-input">
+                    </div>
+                    <div class="filter-group">
+                        <label for="slipEndDate">Sampai:</label>
+                        <input type="date" id="slipEndDate" class="filter-input">
+                    </div>
+                    <div class="filter-group">
+                        <label for="slipEmployeeId">Karyawan:</label>
+                        <select id="slipEmployeeId" class="filter-select">
+                            <option value="">-- Pilih Karyawan --</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="Payslip.generateSlip()">
+                        Buat Slip
+                    </button>
+                    <button class="btn btn-secondary" onclick="Payslip.printSlip()">
+                        Cetak PDF
+                    </button>
+                    <button class="btn btn-secondary" onclick="Payslip.generateAllSlips()">
+                        Preview Semua
+                    </button>
+                    <button class="btn btn-primary" onclick="Payslip.printAllSlips()">
+                        Cetak Semua (4/A4)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Slip Preview -->
+            <div id="slipPreviewContainer">
+                <p class="empty-state">Pilih karyawan dan periode gaji, lalu klik "Buat Slip"</p>
             </div>
         </section>
 
         <!-- Context7 Documentation Section -->
         <section id="context7-section" class="content-section">
             <div class="section-header">
-                <h2>📚 Context7 Documentation Search</h2>
+                <h2>Context7 Documentation Search</h2>
                 <button class="btn btn-secondary" onclick="Context7.clearResults()">
-                    ✕ Reset
+                    Reset
                 </button>
             </div>
 
@@ -309,7 +500,7 @@
                 </div>
                 <div class="form-actions">
                     <button class="btn btn-primary" onclick="Context7.searchLibrary()">
-                        🔍 Cari Library
+                        Cari Library
                     </button>
                 </div>
             </div>
@@ -344,7 +535,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3 id="modalTitle">Tambah Karyawan</h3>
-                <button class="close-modal" onclick="Employees.closeModal()">✕</button>
+                <button class="close-modal" onclick="Employees.closeModal()">X</button>
             </div>
 
             <form id="employeeForm" onsubmit="Employees.saveEmployee(event)">
@@ -385,6 +576,12 @@
                 </div>
 
                 <div class="form-group">
+                    <label>Alamat</label>
+                    <textarea id="modalEmployeeAddress" class="form-input" placeholder="Masukkan alamat karyawan" rows="3"></textarea>
+                    <span class="form-helper-text">Alamat domisili atau alamat lengkap karyawan</span>
+                </div>
+
+                <div class="form-group">
                     <label>Posisi</label>
                     <input type="text" id="modalEmployeePos" class="form-input" placeholder="Contoh: Software Engineer">
                     <span class="form-helper-text">Jabatan atau posisi karyawan</span>
@@ -399,18 +596,18 @@
                 <div class="form-group">
                     <label>Status</label>
                     <select id="modalEmployeeStatus" class="form-input">
-                        <option value="true">✅ Aktif</option>
-                        <option value="false">❌ Tidak Aktif</option>
+                        <option value="true">Aktif</option>
+                        <option value="false">Tidak Aktif</option>
                     </select>
                     <span class="form-helper-text">Status aktifitas karyawan saat ini</span>
                 </div>
 
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="Employees.closeModal()">
-                        ✕ Batal
+                        Batal
                     </button>
                     <button type="submit" class="btn btn-primary">
-                        💾 Simpan Karyawan
+                        Simpan Karyawan
                     </button>
                 </div>
             </form>
@@ -429,14 +626,101 @@
     </div>
 
     <!-- JavaScript -->
-    <script src="js/config.js?v=2"></script>
-    <script src="js/api.js?v=2"></script>
-    <script src="js/employees.js"></script>
-    <script src="js/attendance.js"></script>
-    <script src="js/reports.js"></script>
-    <script src="js/dashboard.js?v=2"></script>
-    <script src="js/context7.js"></script>
-    <script src="js/app.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        // Initialize jsPDF globally
+        if (window.jspdf) {
+            window.jsPDF = window.jspdf.jsPDF;
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
+    <script src="/admin/js/config.js?v=8"></script>
+    <!-- Attendance Modal -->
+    <div id="attendanceModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="Attendance.closeModal()">&times;</span>
+            <h2 id="attendanceModalTitle">Edit Kehadiran</h2>
+            <form id="attendanceForm" onsubmit="Attendance.saveAttendance(event)">
+                <input type="hidden" id="attendanceId">
+
+                <div class="form-group">
+                    <label>Karyawan</label>
+                    <input type="text" id="attEmployeeName" readonly class="input-readonly">
+                    <input type="hidden" id="attEmployeeId">
+                </div>
+
+                <div class="form-group">
+                    <label>Tipe Absensi</label>
+                    <select id="attType" required class="modal-select">
+                        <option value="checkin">Check-In (Masuk)</option>
+                        <option value="checkout">Check-Out (Keluar)</option>
+                        <option value="overtime">Lembur</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Waktu & Tanggal</label>
+                    <input type="datetime-local" id="attTimestamp" required class="modal-input">
+                </div>
+
+                <div class="form-group">
+                    <label>Alamat / Lokasi</label>
+                    <textarea id="attAddress" rows="2" class="modal-input" placeholder="Otomatis dari GPS"></textarea>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="Attendance.closeModal()">Batal</button>
+                    <button type="submit" class="btn btn-primary">
+                        Simpan Karyawan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/admin/js/api.js?v=7"></script>
+    <script src="/admin/js/employees.js?v=7"></script>
+    <script src="/admin/js/attendance.js?v=7"></script>
+    <script src="/admin/js/reports.js?v=7"></script>
+    <script src="/admin/js/dashboard.js?v=7"></script>
+    <script src="/admin/js/payslip.js?v=7"></script>
+    <script src="/admin/js/context7.js?v=7"></script>
+    <script src="/admin/js/app.js?v=7"></script>
+
+    <!-- Detail Report Modal -->
+    <div id="detailReportModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>Detail Insentif Anggota</h3>
+                <button class="close-modal" onclick="Reports.closeDetailModal()">X</button>
+            </div>
+            <div id="detailReportHeader" class="detail-report-header">
+                <!-- Header info injected here -->
+            </div>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Tanggal</th>
+                            <th>Masuk</th>
+                            <th>Keluar</th>
+                            <th>Lembur</th>
+                            <th>Jam Kerja</th>
+                            <th>Insentif</th>
+                        </tr>
+                    </thead>
+                    <tbody id="detailReportTableBody">
+                        <!-- Rows injected here -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="Reports.closeDetailModal()">Tutup</button>
+                <button class="btn btn-primary" onclick="Reports.printIndividualReport()">Cetak Laporan</button>
+            </div>
+        </div>
+    </div>
 
     <script>
         function toggleSidebar() {
@@ -468,6 +752,8 @@
                 Employees.load();
             } else if (sectionId === 'attendance') {
                 Attendance.load();
+            } else if (sectionId === 'payslip') {
+                Payslip.load();
             } else if (sectionId === 'context7') {
                 // Show result cards if there's content
                 const libraryResults = document.getElementById('context7LibraryResults');

@@ -61,6 +61,7 @@ export default async function handler(req, res) {
     const uniqueEmployees = new Set(todayAttendance.map(a => a.employee_id));
     const checkins = todayAttendance.filter(a => a.type === 'checkin').length;
     const checkouts = todayAttendance.filter(a => a.type === 'checkout').length;
+    const overtimes = todayAttendance.filter(a => a.type === 'overtime').length;
 
     // Get recent activities (last 10)
     const { data: recentActivities, error: activitiesError } = await supabase
@@ -115,6 +116,7 @@ export default async function handler(req, res) {
           uniqueEmployees: uniqueEmployees.size,
           checkins,
           checkouts,
+          overtimes,
           absent: employees.length - uniqueEmployees.size,
           late: 0 // TODO: Calculate based on check-in time
         },

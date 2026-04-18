@@ -1,21 +1,20 @@
-// Context7 Documentation Integration using Context7 Library
-const { Context7 } = require('../../lib/context7');
-
-// Initialize Context7 library
-const context7 = new Context7({
-    apiKey: 'ctx7sk-90392380-5918-4360-841f-93e51cdcd880'
-});
-
 // Context7 UI Integration
 const Context7UI = {
     async resolveLibraryId(libraryName, query) {
         try {
             App.showLoading('Mencari library...');
 
-            const libraries = await context7.resolveLibraryId(libraryName, query);
+            const response = await API.request('/context7', {
+                method: 'POST',
+                body: JSON.stringify({
+                    mode: 'resolve',
+                    libraryName,
+                    query
+                })
+            });
             App.hideLoading();
 
-            return libraries;
+            return response.data || [];
         } catch (error) {
             App.hideLoading();
             App.showToast(error.message, 'error');
@@ -27,10 +26,17 @@ const Context7UI = {
         try {
             App.showLoading('Mengambil dokumentasi...');
 
-            const docs = await context7.queryDocs(libraryId, query);
+            const response = await API.request('/context7', {
+                method: 'POST',
+                body: JSON.stringify({
+                    mode: 'docs',
+                    libraryId,
+                    query
+                })
+            });
             App.hideLoading();
 
-            return docs;
+            return response.data || [];
         } catch (error) {
             App.hideLoading();
             App.showToast(error.message, 'error');
@@ -149,3 +155,5 @@ const Context7UI = {
         document.getElementById('docsResultsCard').style.display = 'none';
     }
 };
+
+window.Context7 = Context7UI;

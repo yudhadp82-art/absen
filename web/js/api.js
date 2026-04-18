@@ -42,7 +42,7 @@ const API = {
     /**
      * Submit attendance (check-in/check-out)
      */
-    async submitAttendance(employeeId, employeeName, type, location) {
+    async submitAttendance(employeeId, employeeName, type, location, timestamp = null) {
         return this.request('/attendance', {
             method: 'POST',
             body: JSON.stringify({
@@ -52,7 +52,8 @@ const API = {
                 latitude: location.latitude,
                 longitude: location.longitude,
                 accuracy: location.accuracy,
-                deviceId: this.getDeviceId()
+                deviceId: this.getDeviceId(),
+                timestamp: timestamp
             })
         });
     },

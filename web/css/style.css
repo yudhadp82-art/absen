@@ -205,6 +205,136 @@ body {
     gap: var(--spacing-md);
 }
 
+.attendance-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-lg);
+}
+
+.attendance-tab {
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.attendance-tab.active {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: #fff;
+}
+
+.attendance-panels {
+    margin-top: var(--spacing-md);
+}
+
+.attendance-panel {
+    display: none;
+}
+
+.attendance-panel.active {
+    display: block;
+}
+
+.attendance-panel-text {
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-md);
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-md);
+}
+
+.selection-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+}
+
+.selection-name {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.selection-meta {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.attendance-employee-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.attendance-employee-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--bg-secondary);
+}
+
+.attendance-employee-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.attendance-employee-name {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.attendance-employee-id {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.attendance-employee-action {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--spacing-sm);
+}
+
+.attendance-employee-status {
+    font-size: 0.85rem;
+    color: var(--success-color);
+    text-align: right;
+}
+
+.attendance-employee-status.is-complete {
+    color: var(--text-secondary);
+}
+
+.btn-list-action {
+    width: auto;
+    min-width: 128px;
+    padding: 10px 16px;
+}
+
+.btn-night {
+    background: linear-gradient(135deg, #1f3c88, #10245c);
+    color: #fff;
+}
+
 .btn-checkin {
     background: linear-gradient(135deg, #4CAF50, #45a049);
     color: white;
@@ -349,6 +479,19 @@ body {
     border-radius: var(--radius-sm);
 }
 
+.history-item.is-checkin {
+    border-left: 4px solid var(--success-color);
+}
+
+.history-item.is-checkout {
+    border-left: 4px solid var(--secondary-color);
+}
+
+.history-main {
+    display: flex;
+    flex-direction: column;
+}
+
 .history-time {
     font-weight: 600;
     color: var(--text-primary);
@@ -357,6 +500,13 @@ body {
 .history-type {
     font-size: 0.9rem;
     color: var(--text-secondary);
+}
+
+.history-name {
+    text-align: right;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
 }
 
 .empty-state {
@@ -411,11 +561,12 @@ body {
     bottom: 20px;
     left: 50%;
     transform: translateX(-50%);
-    background: #323232;
-    color: white;
+    background: #FFFFFF;
+    color: #111111;
     padding: 14px var(--spacing-lg);
     border-radius: var(--radius-md);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-color);
     z-index: 1001;
     max-width: 90%;
     text-align: center;
@@ -448,6 +599,28 @@ body {
 
     .attendance-buttons {
         grid-template-columns: 1fr;
+    }
+
+    .attendance-tabs {
+        grid-template-columns: 1fr;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .attendance-employee-item {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .attendance-employee-action {
+        align-items: stretch;
+    }
+
+    .attendance-employee-status,
+    .history-name {
+        text-align: left;
     }
 
     .btn-icon {

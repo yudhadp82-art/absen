@@ -3,12 +3,22 @@
 
 const express = require('express');
 const cors = require('cors');
+const {
+  isContext7Configured,
+  validateContext7Request,
+  executeContext7Request
+} = require('./lib/context7-service');
 const app = express();
 const PORT = 3000;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Serve static files
+const path = require('path');
+app.use('/admin', express.static(path.join(__dirname, 'admin')));
+app.use('/', express.static(path.join(__dirname, 'web')));
 
 // In-memory storage
 let attendanceData = [];
@@ -23,9 +33,37 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+app.post('/api/context7', async (req, res) => {
+  if (!isContext7Configured()) {
+    return res.status(503).json({
+      success: false,
+      error: 'Context7 belum dikonfigurasi di server'
+    });
+  }
+
+  const input = validateContext7Request(req.body);
+  if (input.error) {
+    return res.status(400).json({
+      success: false,
+      error: input.error
+    });
+  }
+
+  try {
+    const result = await executeContext7Request(input);
+    return res.json(result);
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      error: 'Gagal mengambil data dari Context7',
+      message: error.message
+    });
+  }
+});
+
 // Get attendance history
 app.get('/api/attendance', (req, res) => {
-  const { employeeId, date } = req.query;
+  const { employeeId, date, startDate, endDate } = req.query;
 
   let filteredData = attendanceData;
 
@@ -36,6 +74,18 @@ app.get('/api/attendance', (req, res) => {
   if (date) {
     filteredData = filteredData.filter(a =>
       a.timestamp.startsWith(date)
+    );
+  }
+
+  if (startDate) {
+    filteredData = filteredData.filter(a =>
+      a.timestamp.split('T')[0] >= startDate
+    );
+  }
+
+  if (endDate) {
+    filteredData = filteredData.filter(a =>
+      a.timestamp.split('T')[0] <= endDate
     );
   }
 
@@ -127,6 +177,7 @@ app.listen(PORT, () => {
   console.log(`\n📚 Available endpoints:`);
   console.log(`   GET  /api/health`);
   console.log(`   GET  /api/attendance`);
+  console.log(`   POST /api/context7`);
   console.log(`   POST /api/attendance`);
   console.log('\n✨ Server ready untuk menerima requests!');
   console.log('========================================\n');

@@ -68,14 +68,7 @@ const Employees = {
                 document.getElementById('employeeName').value = employee.employee_name;
                 App.state.employeeId = employee.employee_id;
                 App.state.employeeName = employee.employee_name;
-                
-                // Show toast if exactly matched from search
-                console.log(`Matched employee: ${employee.employee_name}`);
-                
-                // Refresh history for this employee
-                App.loadTodayHistory();
             } else {
-                // If input is empty or doesn't match, clear hidden fields
                 if (val.trim() === '') {
                     document.getElementById('employeeId').value = '';
                     document.getElementById('employeeName').value = '';

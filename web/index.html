@@ -6,154 +6,149 @@
     <meta name="theme-color" content="#2196F3">
     <meta name="description" content="Sistem Absensi Karyawan dengan GPS Location Tracking">
 
-    <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192x192.png">
     <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
 
     <title>Absensi Karyawan</title>
 
-    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- CSS -->
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <!-- App Container -->
     <div id="app">
-        <!-- Header -->
         <header class="app-header">
-            <h1>📍 Absensi Karyawan</h1>
+            <h1>Absensi Karyawan</h1>
         </header>
 
-        <!-- Main Content -->
         <main class="app-content">
-            <!-- Employee Info Card -->
-            <section class="card employee-card">
-                <h2>Informasi Karyawan</h2>
-
-                <div class="form-group">
-                    <label for="employeeId">ID Karyawan</label>
-                    <input
-                        type="text"
-                        id="employeeId"
-                        class="form-input"
-                        placeholder="Contoh: EMP001"
-                        required
-                    >
-                </div>
-
-                <div class="form-group">
-                    <label for="employeeName">Nama Karyawan</label>
-                    <input
-                        type="text"
-                        id="employeeName"
-                        class="form-input"
-                        placeholder="Contoh: John Doe"
-                        required
-                    >
-                </div>
-
-                <button id="saveInfoBtn" class="btn btn-secondary">
-                    💾 Simpan Info
-                </button>
-            </section>
-
-            <!-- Location Card -->
-            <section class="card location-card">
-                <h2>📍 Lokasi Saat Ini</h2>
-
-                <div id="locationStatus" class="location-status">
-                    <div class="status-icon">📍</div>
-                    <p>Belum ada lokasi</p>
-                    <small>Klik tombol di bawah untuk mengambil lokasi</small>
-                </div>
-
-                <div id="locationInfo" class="location-info" style="display: none;">
-                    <div class="location-success">
-                        <span class="success-icon">✅</span>
-                        <span>Lokasi berhasil diambil!</span>
-                    </div>
-
-                    <div class="location-details">
-                        <div class="detail-row">
-                            <span class="detail-label">Latitude</span>
-                            <span class="detail-value" id="latitude">-</span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="detail-label">Longitude</span>
-                            <span class="detail-value" id="longitude">-</span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="detail-label">Akurasi</span>
-                            <span class="detail-value" id="accuracy">-</span>
-                        </div>
-                    </div>
-
-                    <button id="refreshLocationBtn" class="btn btn-secondary btn-small">
-                        🔄 Refresh Lokasi
-                    </button>
-                </div>
-
-                <button id="getLocationBtn" class="btn btn-primary">
-                    📍 Ambil Lokasi
-                </button>
-            </section>
-
-            <!-- Attendance Buttons -->
             <section class="card attendance-card">
-                <h2>📝 Absensi</h2>
+                <h2>Absensi</h2>
 
-                <div class="attendance-buttons">
-                    <button id="checkInBtn" class="btn btn-checkin" disabled>
-                        <span class="btn-icon">☀️</span>
-                        <span class="btn-text">Check In</span>
-                    </button>
+                <div class="manual-time-toggle">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="manualTimeToggle">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="toggle-label">Atur Waktu Manual</span>
+                </div>
 
-                    <button id="checkOutBtn" class="btn btn-checkout" disabled>
-                        <span class="btn-icon">🌙</span>
-                        <span class="btn-text">Check Out</span>
-                    </button>
+                <div id="manualTimeContainer" class="form-group" style="display: none; margin-top: 15px;">
+                    <label for="manualTimeInput">Pilih Waktu</label>
+                    <input type="datetime-local" id="manualTimeInput" class="form-input">
+                </div>
+
+                <div class="attendance-tabs" role="tablist" aria-label="Tipe absensi">
+                    <button class="attendance-tab active" type="button" data-tab="checkin">Masuk</button>
+                    <button class="attendance-tab" type="button" data-tab="checkout">Keluar</button>
+                    <button class="attendance-tab" type="button" data-tab="overtime">Lembur</button>
+                </div>
+
+                <div class="attendance-panels">
+                    <div id="attendancePanelCheckin" class="attendance-panel active">
+                        <p class="attendance-panel-text">Form input absensi masuk.</p>
+
+                        <div class="form-group">
+                            <label for="employeeSearch">Cari Nama / ID Karyawan</label>
+                            <input
+                                type="text"
+                                id="employeeSearch"
+                                class="form-input"
+                                list="employeeDatalist"
+                                placeholder="Ketik nama atau ID..."
+                                autocomplete="off"
+                            >
+                            <datalist id="employeeDatalist"></datalist>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="employeeId">ID Karyawan</label>
+                                <input type="text" id="employeeId" class="form-input" placeholder="Contoh: EMP001" readonly>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="employeeName">Nama Karyawan</label>
+                                <input type="text" id="employeeName" class="form-input" placeholder="Nama karyawan" readonly>
+                            </div>
+                        </div>
+
+                        <button id="checkInBtn" class="btn btn-checkin">
+                            <span class="btn-icon">Masuk</span>
+                            <span class="btn-text">Simpan Absensi Masuk</span>
+                        </button>
+                    </div>
+
+                    <div id="attendancePanelCheckout" class="attendance-panel">
+                        <p class="attendance-panel-text">Form input absensi keluar. Daftar nama otomatis dari karyawan yang sudah masuk.</p>
+
+                        <div class="form-group">
+                            <label for="checkoutEmployeeSelect">Pilih Karyawan</label>
+                            <select id="checkoutEmployeeSelect" class="form-input">
+                                <option value="">Pilih karyawan yang sudah masuk</option>
+                            </select>
+                        </div>
+
+                        <div id="checkoutEmployeeInfo" class="selection-info" style="display: none;"></div>
+
+                        <button id="checkOutBtn" class="btn btn-checkout">
+                            <span class="btn-icon">Keluar</span>
+                            <span class="btn-text">Simpan Absensi Keluar</span>
+                        </button>
+                    </div>
+
+                    <div id="attendancePanelOvertime" class="attendance-panel">
+                        <p class="attendance-panel-text">Form input lembur. Daftar nama otomatis dari karyawan yang sudah masuk.</p>
+
+                        <div class="form-group">
+                            <label for="overtimeEmployeeSelect">Pilih Karyawan</label>
+                            <select id="overtimeEmployeeSelect" class="form-input">
+                                <option value="">Pilih karyawan untuk lembur</option>
+                            </select>
+                        </div>
+
+                        <div id="overtimeEmployeeInfo" class="selection-info" style="display: none;"></div>
+
+                        <button id="overtimeBtn" class="btn btn-night">
+                            <span class="btn-icon">Lembur</span>
+                            <span class="btn-text">Simpan Form Lembur</span>
+                        </button>
+                    </div>
                 </div>
             </section>
 
-            <!-- Status Messages -->
             <section id="statusSection" class="card status-card" style="display: none;">
                 <div id="statusMessage" class="status-message"></div>
             </section>
 
-            <!-- History Card (Optional) -->
             <section class="card history-card">
-                <h2>📊 Riwayat Hari Ini</h2>
+                <h2>Riwayat Hari Ini</h2>
                 <div id="todayHistory" class="history-list">
                     <p class="empty-state">Belum ada absensi hari ini</p>
                 </div>
             </section>
         </main>
 
-        <!-- Loading Overlay -->
         <div id="loadingOverlay" class="loading-overlay" style="display: none;">
             <div class="loading-spinner"></div>
             <p id="loadingText">Memproses...</p>
         </div>
 
-        <!-- Toast Notification -->
         <div id="toast" class="toast" style="display: none;">
             <span id="toastMessage"></span>
         </div>
     </div>
 
-    <!-- JavaScript -->
     <script src="js/config.js"></script>
     <script src="js/storage.js"></script>
     <script src="js/location.js"></script>
     <script src="js/api.js"></script>
+    <script src="js/employees.js"></script>
     <script src="js/app.js"></script>
 
-    <!-- Service Worker Registration -->
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {

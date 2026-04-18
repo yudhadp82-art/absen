@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS attendance (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     employee_id VARCHAR(50) NOT NULL,
     employee_name VARCHAR(255) NOT NULL,
-    type VARCHAR(20) NOT NULL CHECK (type IN ('checkin', 'checkout')),
+    type VARCHAR(20) NOT NULL CHECK (type IN ('checkin', 'checkout', 'overtime')),
     latitude DECIMAL(10, 8) NOT NULL,
     longitude DECIMAL(11, 8) NOT NULL,
     accuracy FLOAT,
@@ -35,10 +35,13 @@ SELECT
     DATE(created_at) as attendance_date,
     MAX(CASE WHEN type = 'checkin' THEN created_at END) as checkin_time,
     MAX(CASE WHEN type = 'checkout' THEN created_at END) as checkout_time,
+    MAX(CASE WHEN type = 'overtime' THEN created_at END) as overtime_time,
     MAX(CASE WHEN type = 'checkin' THEN latitude END) as checkin_latitude,
     MAX(CASE WHEN type = 'checkin' THEN longitude END) as checkin_longitude,
     MAX(CASE WHEN type = 'checkout' THEN latitude END) as checkout_latitude,
-    MAX(CASE WHEN type = 'checkout' THEN longitude END) as checkout_longitude
+    MAX(CASE WHEN type = 'checkout' THEN longitude END) as checkout_longitude,
+    MAX(CASE WHEN type = 'overtime' THEN latitude END) as overtime_latitude,
+    MAX(CASE WHEN type = 'overtime' THEN longitude END) as overtime_longitude
 FROM attendance
 GROUP BY employee_id, employee_name, DATE(created_at)
 ORDER BY attendance_date DESC, employee_id;
@@ -158,6 +161,7 @@ CREATE TABLE IF NOT EXISTS employees (
     employee_name VARCHAR(255) NOT NULL,
     email VARCHAR(255),
     department VARCHAR(255),
+    address TEXT,
     position VARCHAR(255),
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),

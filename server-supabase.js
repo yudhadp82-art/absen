@@ -1,10 +1,15 @@
 // Express Server dengan Supabase Database
 // Backend API untuk Sistem Absensi Karyawan
 
-require('dotenv').config();
+require('./lib/load-env').loadLocalEnv();
 const express = require('express');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
+const {
+  isContext7Configured,
+  validateContext7Request,
+  executeContext7Request
+} = require('./lib/context7-service');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -56,10 +61,38 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
+app.post('/api/context7', async (req, res) => {
+  if (!isContext7Configured()) {
+    return res.status(503).json({
+      success: false,
+      error: 'Context7 belum dikonfigurasi di server'
+    });
+  }
+
+  const input = validateContext7Request(req.body);
+  if (input.error) {
+    return res.status(400).json({
+      success: false,
+      error: input.error
+    });
+  }
+
+  try {
+    const result = await executeContext7Request(input);
+    return res.json(result);
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      error: 'Gagal mengambil data dari Context7',
+      message: error.message
+    });
+  }
+});
+
 // Get attendance history
 app.get('/api/attendance', async (req, res) => {
   try {
-    const { employeeId, date, limit = 100, offset = 0 } = req.query;
+    const { employeeId, date, startDate, endDate, limit = 100, offset = 0 } = req.query;
 
     let query = supabase
       .from('attendance')
@@ -76,14 +109,26 @@ app.get('/api/attendance', async (req, res) => {
     // Filter by date if provided
     if (date) {
       // Filter by date range for the entire day
-      const startDate = new Date(date);
-      startDate.setHours(0, 0, 0, 0);
+      const s = new Date(date);
+      s.setHours(0, 0, 0, 0);
 
-      const endDate = new Date(date);
-      endDate.setHours(23, 59, 59, 999);
+      const e = new Date(date);
+      e.setHours(23, 59, 59, 999);
 
-      query = query.gte('created_at', startDate.toISOString())
-                   .lte('created_at', endDate.toISOString());
+      query = query.gte('created_at', s.toISOString())
+                   .lte('created_at', e.toISOString());
+    }
+
+    if (startDate) {
+      const s = new Date(startDate);
+      s.setHours(0, 0, 0, 0);
+      query = query.gte('created_at', s.toISOString());
+    }
+
+    if (endDate) {
+      const e = new Date(endDate);
+      e.setHours(23, 59, 59, 999);
+      query = query.lte('created_at', e.toISOString());
     }
 
     const { data, error, count } = await query;
@@ -371,6 +416,7 @@ app.listen(PORT, () => {
   console.log(`   GET  /api/attendance`);
   console.log(`   GET  /api/attendance/summary`);
   console.log(`   GET  /api/attendance/stats`);
+  console.log(`   POST /api/context7`);
   console.log(`   POST /api/attendance`);
   console.log('\n✨ Server ready dengan Supabase database!');
   console.log('========================================\n');

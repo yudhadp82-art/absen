@@ -57,7 +57,7 @@ export default async function handler(req, res) {
 
     // GET /api/attendance - Get attendance history
     if (method === 'GET') {
-      const { employeeId, date, limit = 100, offset = 0 } = query;
+      const { employeeId, date, startDate: qStart, endDate: qEnd, limit = 100, offset = 0 } = query;
 
       let queryBuilder = supabase
         .from('attendance')
@@ -70,15 +70,18 @@ export default async function handler(req, res) {
         queryBuilder = queryBuilder.eq('employee_id', employeeId);
       }
 
-      if (date) {
-        const startDate = new Date(date);
-        startDate.setHours(0, 0, 0, 0);
+      if (qStart || qEnd || date) {
+        const start = qStart || date;
+        const end = qEnd || date || qStart;
 
-        const endDate = new Date(date);
-        endDate.setHours(23, 59, 59, 999);
+        const startTime = new Date(start);
+        startTime.setHours(0, 0, 0, 0);
 
-        queryBuilder = queryBuilder.gte('created_at', startDate.toISOString())
-                             .lte('created_at', endDate.toISOString());
+        const endTime = new Date(end);
+        endTime.setHours(23, 59, 59, 999);
+
+        queryBuilder = queryBuilder.gte('created_at', startTime.toISOString())
+                             .lte('created_at', endTime.toISOString());
       }
 
       const { data, error } = await queryBuilder;
