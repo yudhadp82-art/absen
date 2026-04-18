@@ -622,6 +622,13 @@ const Payslip = {
         const startX = x + margin;
         let curY = y + margin;
 
+        // Dashed border for cutting guide
+        doc.setDrawColor(150);
+        doc.setLineWidth(0.2);
+        doc.setLineDashPattern([2, 2], 0);
+        doc.rect(x, y, slipW, slipH);
+        doc.setLineDashPattern([], 0);
+
         // Clean title separator line
         doc.setDrawColor(200);
         doc.setLineWidth(0.3);
