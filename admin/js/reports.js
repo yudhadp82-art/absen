@@ -640,22 +640,10 @@ const Reports = {
             }
             const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-            // Load letterhead
-            const imgData = await this.loadImageAsBase64('/admin/img/kop-surat.png');
+            // Setup page
             const pageWidth = doc.internal.pageSize.getWidth();
             const margin = 15;
-            const imgWidth = pageWidth - margin * 2;
-            const imgHeight = imgWidth * 0.15;
-            doc.addImage(imgData, 'PNG', margin, 10, imgWidth, imgHeight);
-
-            // Line separator
-            const lineY = 10 + imgHeight + 2;
-            doc.setDrawColor(0);
-            doc.setLineWidth(0.5);
-            doc.line(margin, lineY, pageWidth - margin, lineY);
-
-            // Title
-            let cursorY = lineY + 10;
+            let cursorY = 20;
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(14);
             doc.text('RINCIAN INSENTIF KARYAWAN', pageWidth / 2, cursorY, { align: 'center' });
@@ -882,22 +870,10 @@ const Reports = {
             const jsPDF = window.jsPDF || window.jspdf?.jsPDF;
             const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
-            // Load letterhead
-            const imgData = await this.loadImageAsBase64('/admin/img/kop-surat.png');
+            // Setup page
             const pageWidth = doc.internal.pageSize.getWidth();
             const margin = 10;
-            const imgWidth = pageWidth - margin * 2;
-            const imgHeight = imgWidth * 0.12; 
-            doc.addImage(imgData, 'PNG', margin, 5, imgWidth, imgHeight);
-
-            // Separator
-            const lineY = 5 + imgHeight + 2;
-            doc.setDrawColor(0);
-            doc.setLineWidth(0.5);
-            doc.line(margin, lineY, pageWidth - margin, lineY);
-
-            // Title
-            let cursorY = lineY + 8;
+            let cursorY = 15;
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(14);
             doc.text('REKAP PERIODE ABSENSI', pageWidth / 2, cursorY, { align: 'center' });
@@ -1044,22 +1020,10 @@ const Reports = {
             const jsPDF = window.jsPDF || window.jspdf?.jsPDF;
             const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-            // Load letterhead
-            const imgData = await this.loadImageAsBase64('/admin/img/kop-surat.png');
+            // Setup page
             const pageWidth = doc.internal.pageSize.getWidth();
             const margin = 15;
-            const imgWidth = pageWidth - margin * 2;
-            const imgHeight = imgWidth * 0.15;
-            doc.addImage(imgData, 'PNG', margin, 10, imgWidth, imgHeight);
-
-            // Line separator
-            const lineY = 10 + imgHeight + 2;
-            doc.setDrawColor(0);
-            doc.setLineWidth(0.5);
-            doc.line(margin, lineY, pageWidth - margin, lineY);
-
-            // Header info
-            let cursorY = lineY + 10;
+            let cursorY = 20;
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(14);
             doc.text('DAFTAR HADIR KARYAWAN HARIAN', pageWidth / 2, cursorY, { align: 'center' });

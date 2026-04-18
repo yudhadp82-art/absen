@@ -309,24 +309,10 @@ const Payslip = {
             }
             const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-            // Load letterhead image
-            const imgData = await this.loadImageAsBase64('/admin/img/kop-surat.png');
-
-            // Add letterhead image (full width with margins)
+            // Setup page
             const pageWidth = doc.internal.pageSize.getWidth();
             const margin = 15;
-            const imgWidth = pageWidth - margin * 2;
-            const imgHeight = imgWidth * 0.15; // aspect ratio approximation
-            doc.addImage(imgData, 'PNG', margin, 10, imgWidth, imgHeight);
-
-            // Line separator below header
-            const lineY = 10 + imgHeight + 2;
-            doc.setDrawColor(0);
-            doc.setLineWidth(0.5);
-            doc.line(margin, lineY, pageWidth - margin, lineY);
-
-            // Title
-            let cursorY = lineY + 10;
+            let cursorY = 20;
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(16);
             doc.text('SLIP INSENTIF', pageWidth / 2, cursorY, { align: 'center' });
@@ -630,7 +616,7 @@ const Payslip = {
     },
 
     // Render a single mini slip onto a jsPDF doc at given position
-    renderMiniSlipToPdf(doc, d, periode, imgData, x, y, slipW, slipH) {
+    renderMiniSlipToPdf(doc, d, periode, x, y, slipW, slipH) {
         const margin = 3;
         const innerW = slipW - margin * 2;
         const startX = x + margin;
@@ -642,11 +628,6 @@ const Payslip = {
         doc.setLineDashPattern([2, 2], 0);
         doc.rect(x, y, slipW, slipH);
         doc.setLineDashPattern([], 0);
-
-        // Letterhead image
-        const imgH = innerW * 0.12;
-        doc.addImage(imgData, 'PNG', startX, curY, innerW, imgH);
-        curY += imgH + 1;
 
         // Separator line
         doc.setDrawColor(0);
@@ -803,8 +784,6 @@ const Payslip = {
             const jsPDF = window.jsPDF || window.jspdf?.jsPDF;
             const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-            const imgData = await this.loadImageAsBase64('/admin/img/kop-surat.png');
-
             const pageW = doc.internal.pageSize.getWidth();
             const pageH = doc.internal.pageSize.getHeight();
             const pageMargin = 6;
@@ -825,7 +804,7 @@ const Payslip = {
                     doc.addPage();
                 }
                 const pos = positions[posIdx];
-                this.renderMiniSlipToPdf(doc, allSlipsData[i], periode, imgData, pos.x, pos.y, slipW, slipH);
+                this.renderMiniSlipToPdf(doc, allSlipsData[i], periode, pos.x, pos.y, slipW, slipH);
             }
 
             doc.save('Slip-Insentif-Semua-' + startDate + '_' + endDate + '.pdf');
