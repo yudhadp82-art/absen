@@ -617,55 +617,48 @@ const Payslip = {
 
     // Render a single mini slip onto a jsPDF doc at given position
     renderMiniSlipToPdf(doc, d, periode, x, y, slipW, slipH) {
-        const margin = 3;
+        const margin = 5;
         const innerW = slipW - margin * 2;
         const startX = x + margin;
         let curY = y + margin;
 
-        // Dashed border for cutting guide
-        doc.setDrawColor(180);
-        doc.setLineWidth(0.2);
-        doc.setLineDashPattern([2, 2], 0);
-        doc.rect(x, y, slipW, slipH);
-        doc.setLineDashPattern([], 0);
-
-        // Separator line
-        doc.setDrawColor(0);
+        // Clean title separator line
+        doc.setDrawColor(200);
         doc.setLineWidth(0.3);
         doc.line(startX, curY, startX + innerW, curY);
-        curY += 3;
+        curY += 4;
 
         // Title
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(9);
+        doc.setFontSize(8);
         doc.text('SLIP INSENTIF', x + slipW / 2, curY, { align: 'center' });
-        curY += 5;
+        curY += 4;
 
         // Metadata
-        doc.setFontSize(7);
+        doc.setFontSize(6);
         const lblX = startX;
-        const sepX = startX + 16;
-        const valX = startX + 19;
+        const sepX = startX + 14;
+        const valX = startX + 17;
 
         doc.setFont('helvetica', 'bold');
         doc.text('ID', lblX, curY);
         doc.text(':', sepX, curY);
         doc.setFont('helvetica', 'normal');
         doc.text(String(d.employeeId), valX, curY);
-        curY += 3.5;
+        curY += 3;
 
         doc.setFont('helvetica', 'bold');
         doc.text('Nama', lblX, curY);
         doc.text(':', sepX, curY);
         doc.text(String(d.employeeName), valX, curY);
-        curY += 3.5;
+        curY += 3;
 
         doc.setFont('helvetica', 'bold');
         doc.text('Periode', lblX, curY);
         doc.text(':', sepX, curY);
         doc.setFont('helvetica', 'normal');
         doc.text(String(periode), valX, curY);
-        curY += 4;
+        curY += 3;
 
         // Table
         const tableBody = d.rows.map(row => {
@@ -688,8 +681,8 @@ const Payslip = {
             body: tableBody,
             margin: { left: startX, right: doc.internal.pageSize.getWidth() - (startX + innerW) },
             tableWidth: innerW,
-            styles: { fontSize: 6.5, cellPadding: 1, lineColor: [100, 100, 100], lineWidth: 0.15 },
-            headStyles: { fillColor: [235, 235, 235], textColor: [0, 0, 0], fontStyle: 'bold', halign: 'center', fontSize: 6 },
+            styles: { fontSize: 5.5, cellPadding: 0.8, lineColor: [100, 100, 100], lineWidth: 0.12 },
+            headStyles: { fillColor: [235, 235, 235], textColor: [0, 0, 0], fontStyle: 'bold', halign: 'center', fontSize: 5.5 },
             columnStyles: {
                 0: { halign: 'center' },
                 1: { halign: 'center' },
@@ -698,11 +691,13 @@ const Payslip = {
                 4: { halign: 'right' }
             },
             theme: 'grid',
+            pageBreak: 'avoid',
+            rowPageBreak: 'avoid'
         });
 
         // Signature
-        const sigY = doc.lastAutoTable.finalY + 4;
-        doc.setFontSize(6.5);
+        const sigY = doc.lastAutoTable.finalY + 3;
+        doc.setFontSize(5.5);
         doc.setFont('helvetica', 'normal');
         doc.text('Penerima,', startX, sigY);
         doc.setFont('helvetica', 'bold');
@@ -786,15 +781,15 @@ const Payslip = {
 
             const pageW = doc.internal.pageSize.getWidth();
             const pageH = doc.internal.pageSize.getHeight();
-            const pageMargin = 6;
-            const gap = 4;
+            const pageMargin = 8;
+            const gap = 8; // Increased gap for better cutting space
             const slipsPerPage = 8;
 
             // Calculate dimensions for 8 vertical slips per page
             const slipW = pageW - pageMargin * 2;
             const slipH = (pageH - pageMargin * 2 - (slipsPerPage - 1) * gap) / slipsPerPage;
 
-            // Generate 8 vertical positions
+            // Generate 8 vertical positions with proper spacing
             const positions = [];
             for (let i = 0; i < slipsPerPage; i++) {
                 positions.push({
