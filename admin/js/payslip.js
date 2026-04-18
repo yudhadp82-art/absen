@@ -417,14 +417,49 @@ const Payslip = {
             const img = new Image();
             img.crossOrigin = 'anonymous';
             img.onload = () => {
-                const canvas = document.createElement('canvas');
-                canvas.width = img.naturalWidth;
-                canvas.height = img.naturalHeight;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0);
-                resolve(canvas.toDataURL('image/png'));
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.naturalWidth;
+                    canvas.height = img.naturalHeight;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    resolve(canvas.toDataURL('image/png'));
+                } catch (e) {
+                    // Fallback jika canvas gagal (CORS issues)
+                    console.warn('Canvas fallback failed, trying direct approach:', e);
+                    // Create simple placeholder letterhead
+                    const placeholderCanvas = document.createElement('canvas');
+                    placeholderCanvas.width = 800;
+                    placeholderCanvas.height = 100;
+                    const placeholderCtx = placeholderCanvas.getContext('2d');
+                    placeholderCtx.fillStyle = '#ffffff';
+                    placeholderCtx.fillRect(0, 0, 800, 100);
+                    placeholderCtx.fillStyle = '#333333';
+                    placeholderCtx.font = 'bold 24px Arial';
+                    placeholderCtx.textAlign = 'center';
+                    placeholderCtx.fillText('KOP SURAT', 400, 50);
+                    placeholderCtx.font = '14px Arial';
+                    placeholderCtx.fillText('PT. ABSEN INDONESIA', 400, 75);
+                    resolve(placeholderCanvas.toDataURL('image/png'));
+                }
             };
-            img.onerror = () => reject(new Error('Gagal memuat gambar kop surat'));
+            img.onerror = () => {
+                // Fallback jika gambar tidak bisa dimuat
+                console.warn('Image load failed, using placeholder letterhead');
+                const placeholderCanvas = document.createElement('canvas');
+                placeholderCanvas.width = 800;
+                placeholderCanvas.height = 100;
+                const placeholderCtx = placeholderCanvas.getContext('2d');
+                placeholderCtx.fillStyle = '#ffffff';
+                placeholderCtx.fillRect(0, 0, 800, 100);
+                placeholderCtx.fillStyle = '#333333';
+                placeholderCtx.font = 'bold 24px Arial';
+                placeholderCtx.textAlign = 'center';
+                placeholderCtx.fillText('KOP SURAT', 400, 50);
+                placeholderCtx.font = '14px Arial';
+                placeholderCtx.fillText('PT. ABSEN INDONESIA', 400, 75);
+                resolve(placeholderCanvas.toDataURL('image/png'));
+            };
             img.src = url;
         });
     },
