@@ -51,9 +51,26 @@ const Reports = {
             };
         }
 
-        const netHours = Math.max(0, rawHours - this.breakHours);
+        const checkoutHour = checkout.getHours();
+        const isBeforeOnePM = checkoutHour < 13;
+        let breakHours = 0;
+        let incentiveDeduction = 0;
+
+        if (isBeforeOnePM) {
+            breakHours = 0;
+            incentiveDeduction = 0;
+        } else {
+            breakHours = 0;
+            incentiveDeduction = 6000;
+        }
+
+        const netHours = Math.max(0, rawHours - breakHours);
         const rawIncentive = netHours * this.hourlyRate;
-        const incentive = Math.round(rawIncentive / this.roundingUnit) * this.roundingUnit;
+        let incentive = Math.round(rawIncentive / this.roundingUnit) * this.roundingUnit;
+
+        if (incentiveDeduction > 0) {
+            incentive = Math.max(0, incentive - incentiveDeduction);
+        }
 
         return {
             workHours: netHours,

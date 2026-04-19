@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git push *)",
+      "Bash(curl -X POST https://absen-brown.vercel.app/api/recalculate -H \"Content-Type: application/json\" -d '{}')",
+      "Bash(vercel logs *)",
+      "Bash(vercel ls *)",
+      "Bash(vercel inspect *)",
+      "Bash(curl -X POST https://absen-brown.vercel.app/api/recalculate -H \"Content-Type: application/json\" -d '{}' -v)"
+    ]
+  }
+}
