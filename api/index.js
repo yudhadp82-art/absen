@@ -117,9 +117,13 @@ export default async function handler(req, res) {
     }
 
     // POST /api/recalculate - Trigger historical data recalculation
-    if (method === 'POST' && query.__path === 'recalculate') {
+    if (method === 'POST' && req.url === '/api/recalculate') {
       try {
+        console.log('=================================');
         console.log('Recalculation endpoint called');
+        console.log('Request URL:', req.url);
+        console.log('Request method:', req.method);
+        console.log('Query string:', req.url);
         console.log('Request body:', JSON.stringify(req.body));
 
         const supabaseUrl = process.env.SUPABASE_URL;
@@ -151,6 +155,7 @@ export default async function handler(req, res) {
 
           if (execError) {
             console.error('SQL execution failed:', execError);
+            console.error('Error details:', JSON.stringify(execError));
             return res.status(500).json({
               success: false,
               error: 'SQL execution failed',
@@ -159,7 +164,8 @@ export default async function handler(req, res) {
           }
 
           console.log('SQL execution response:', JSON.stringify(data));
-          console.log('Recalculation completed successfully');
+          console.log('Records affected:', data?.records_affected || 'unknown');
+          console.log('=================================');
 
           return res.status(200).json({
             success: true,
@@ -169,7 +175,10 @@ export default async function handler(req, res) {
           });
 
         } catch (error) {
+          console.error('=================================');
           console.error('Recalculation endpoint error:', error);
+          console.error('Error message:', error.message);
+          console.error('Error stack:', error.stack);
           return res.status(500).json({
             success: false,
             error: 'Internal Server Error',
@@ -177,7 +186,10 @@ export default async function handler(req, res) {
           });
         }
       } catch (error) {
+        console.error('=================================');
         console.error('Recalculation endpoint error:', error);
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
         return res.status(500).json({
           success: false,
           error: 'Internal Server Error',
