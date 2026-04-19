@@ -4,23 +4,27 @@
 
 -- Update work hours and incentive for paired checkin-checkout records
 -- Only update checkout records that have corresponding checkin
+-- Logika perhitungan baru:
+-- - Checkout sebelum 13:00: Tidak ada pengurangan istirahat
+-- - Checkout 13:00 atau lebih: Ada pengurangan Rp 6.000
+
 UPDATE attendance a
 SET
   work_hours = CASE
     WHEN EXTRACT(HOUR FROM a.created_at) < 13 THEN
-      -- Sebelum 13:00 - tidak ada break, tidak ada pengurangan insentif
-      GREATEST(0,
-        (EXTRACT(EPOCH FROM (c.created_at - a.created_at)) / 3600) - 0))
+      -- Sebelum 13:00
+      0
     ELSE
-      -- Setelah 13:00 - tidak ada break, ada pengurangan Rp 6.000
-      GREATEST(0,
-        ((EXTRACT(EPOCH FROM (c.created_at - a.created_at)) / 3600) - 0)
+      -- Setelah 13:00
+      (EXTRACT(EPOCH FROM (c.created_at - a.created_at)) / 3600
     END,
   incentive = CASE
     WHEN EXTRACT(HOUR FROM a.created_at) < 13 THEN
-      (GREATEST(0, (EXTRACT(EPOCH FROM (c.created_at - a.created_at)) / 3600) - 0) * 6000)
+      -- Sebelum 13:00: Full insentif tanpa pengurangan
+      (EXTRACT(EPOCH FROM (c.created_at - a.created_at)) / 3600 * 6000
     ELSE
-      GREATEST(0, ((EXTRACT(EPOCH FROM (c.created_at - a.created_at)) / 3600) - 0) * 6000)
+      -- Setelah 13:00: Deduct Rp 6.000
+      ((EXTRACT(EPOCH FROM (c.created_at - a.created_at)) / 3600 * 6000) - 6000
     END
 FROM attendance a
 JOIN attendance c ON a.employee_id = c.employee_id
