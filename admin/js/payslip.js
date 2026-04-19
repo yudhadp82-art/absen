@@ -59,7 +59,16 @@ const Payslip = {
 
         const netHours = Math.max(0, rawHours - this.breakHours);
         const rawIncentive = netHours * this.hourlyRate;
-        const incentive = Math.round(rawIncentive / this.roundingUnit) * this.roundingUnit;
+        let incentive = Math.round(rawIncentive / this.roundingUnit) * this.roundingUnit;
+
+        // Deduction if checkout time is after 12:00
+        const checkoutHour = checkout.getHours();
+        const isAfterNoon = checkoutHour >= 12;
+
+        if (isAfterNoon) {
+            // Deduct Rp 6,000 if checkout is after 12:00
+            incentive = Math.max(0, incentive - 6000);
+        }
 
         return { workHours: netHours, incentive };
     },

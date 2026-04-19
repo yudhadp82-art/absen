@@ -47,7 +47,16 @@ function calculateWorkAndIncentive(checkinTime, checkoutTime, breakHours = 1, ho
   }
 
   const workHours = Math.max(0, rawHours - breakHours);
-  const incentive = Math.round((workHours * hourlyRate) / roundingUnit) * roundingUnit;
+  let incentive = Math.round((workHours * hourlyRate) / roundingUnit) * roundingUnit;
+
+  // Deduction if checkout time is after 12:00
+  const checkoutHour = checkout.getHours();
+  const isAfterNoon = checkoutHour >= 12;
+
+  if (isAfterNoon) {
+    // Deduct Rp 6,000 if checkout is after 12:00
+    incentive = Math.max(0, incentive - 6000);
+  }
 
   return {
     workHours,
