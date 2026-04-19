@@ -1,8 +1,15 @@
 {
+  "buildCommand": "npm run build",
   "functions": {
     "api/**/*.js": {
       "memory": 1024,
       "maxDuration": 10
     }
-  }
+  },
+  "routes": [
+    {
+      "src": "/api/recalculate",
+      "dest": "/api/index.js"
+    }
+  ]
 }
