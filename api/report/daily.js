@@ -27,7 +27,7 @@ function formatDateKey(timestamp) {
   return new Date(timestamp).toISOString().split('T')[0];
 }
 
-function calculateWorkAndIncentive(checkinTime, checkoutTime, breakHours = 1, hourlyRate = 6000, roundingUnit = 1000) {
+function calculateWorkAndIncentive(checkinTime, checkoutTime, hourlyRate = 6000, roundingUnit = 1000) {
   if (!checkinTime || !checkoutTime) {
     return {
       workHours: 0,
@@ -46,16 +46,28 @@ function calculateWorkAndIncentive(checkinTime, checkoutTime, breakHours = 1, ho
     };
   }
 
+  // Check checkout hour for break hours and deduction
+  const checkoutHour = checkout.getHours();
+  const isBeforeOnePM = checkoutHour < 13; // Before 13:00 (1:00 PM)
+  let breakHours = 0;
+  let incentiveDeduction = 0;
+
+  if (isBeforeOnePM) {
+    // No break deduction and no incentive deduction if checkout before 13:00
+    breakHours = 0;
+    incentiveDeduction = 0;
+  } else {
+    // No break deduction but Rp 6,000 incentive deduction if checkout after 13:00
+    breakHours = 0;
+    incentiveDeduction = 6000;
+  }
+
   const workHours = Math.max(0, rawHours - breakHours);
   let incentive = Math.round((workHours * hourlyRate) / roundingUnit) * roundingUnit;
 
-  // Deduction if checkout time is after 12:00
-  const checkoutHour = checkout.getHours();
-  const isAfterNoon = checkoutHour >= 12;
-
-  if (isAfterNoon) {
-    // Deduct Rp 6,000 if checkout is after 12:00
-    incentive = Math.max(0, incentive - 6000);
+  // Apply incentive deduction if applicable
+  if (incentiveDeduction > 0) {
+    incentive = Math.max(0, incentive - incentiveDeduction);
   }
 
   return {
