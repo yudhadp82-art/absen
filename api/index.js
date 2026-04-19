@@ -120,11 +120,13 @@ export default async function handler(req, res) {
     if (method === 'POST' && query.__path === 'recalculate') {
       try {
         console.log('Recalculation endpoint called');
+        console.log('Request body:', JSON.stringify(req.body));
 
         const supabaseUrl = process.env.SUPABASE_URL;
         const supabaseKey = process.env.SUPABASE_ANON_KEY;
 
         if (!supabaseUrl || !supabaseKey) {
+          console.error('Missing Supabase credentials');
           return res.status(500).json({
             success: false,
             error: 'Supabase credentials not configured'
@@ -133,75 +135,56 @@ export default async function handler(req, res) {
 
         const supabase = createClient(supabaseUrl, supabaseKey);
 
-        // Execute the recalculation SQL script using REST API
+        // Execute the recalculation SQL script using Supabase client library
         const fs = require('fs');
         const path = require('path');
         const sqlScript = fs.readFileSync(path.join(__dirname, 'supabase/recalculate-historical.sql'), 'utf8');
 
-        console.log('Executing recalculation SQL script via REST API...');
+        console.log('Executing recalculation SQL script...');
+        console.log('SQL Script length:', sqlScript.length);
 
-        const { error: queryError } = await supabase
-          .from('_supabase_migrations')
-          .select('*')
-          .eq('name', 'recalculate-deduction-logic')
-          .order('version', { ascending: false })
-          .limit(1);
-
-        if (queryError) {
-          console.error('Migration check failed:', queryError);
-          return res.status(500).json({
-            success: false,
-            error: 'Failed to check for migration script'
+        try {
+          // Use Supabase client to execute the SQL script directly
+          const { error: execError, data } = await supabase.rpc('execute_sql', {
+            sql: sqlScript
           });
-        }
 
-        // Check if migration exists
-        const migrationExists = queryError && queryError.length > 0;
-
-        if (!migrationExists) {
-          console.log('Creating migration script first...');
-
-          const { error: createError } = await supabase
-            .from('_supabase_migrations')
-            .insert([
-              {
-                name: 'recalculate-deduction-logic',
-                version: '2026041901',
-                sql: sqlScript
-              }
-            ]);
-
-          if (createError) {
-            console.error('Migration creation failed:', createError);
+          if (execError) {
+            console.error('SQL execution failed:', execError);
             return res.status(500).json({
               success: false,
-              error: 'Failed to create migration script'
+              error: 'SQL execution failed',
+              details: execError.message || execError
             });
           }
-        }
 
-        // Execute the SQL directly using REST API
-        const { error: execError } = await supabase
-          .rest('POST', '/rest/v1/rpc/execute_sql', {
-            body: JSON.stringify({ sql: sqlScript })
+          console.log('SQL execution response:', JSON.stringify(data));
+          console.log('Recalculation completed successfully');
+
+          return res.status(200).json({
+            success: true,
+            message: 'Historical data recalculation completed successfully',
+            details: 'All attendance records have been updated with new deduction logic',
+            recordsUpdated: data?.records_affected || 'unknown'
           });
 
-        if (execError) {
-          console.error('Recalculation failed:', execError);
+        } catch (error) {
+          console.error('Recalculation endpoint error:', error);
           return res.status(500).json({
             success: false,
-            error: 'Recalculation failed',
-            details: execError.message
+            error: 'Internal Server Error',
+            message: error.message
           });
         }
-
-        console.log('Recalculation completed successfully');
-
-        return res.status(200).json({
-          success: true,
-          message: 'Historical data recalculation completed',
-          details: 'All attendance records have been updated with new deduction logic'
+      } catch (error) {
+        console.error('Recalculation endpoint error:', error);
+        return res.status(500).json({
+          success: false,
+          error: 'Internal Server Error',
+          message: error.message
         });
+      }
+    }
 
       } catch (error) {
         console.error('Recalculation endpoint error:', error);
