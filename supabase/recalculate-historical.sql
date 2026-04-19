@@ -10,7 +10,7 @@ SET
     WHEN EXTRACT(HOUR FROM a.created_at) < 13 THEN
       -- Sebelum 13:00 - tidak ada break, tidak ada pengurangan insentif
       GREATEST(0,
-        (EXTRACT(EPOCH FROM (c.created_at - a.created_at)) / 3600) - 0)
+        (EXTRACT(EPOCH FROM (c.created_at - a.created_at)) / 3600) - 0))
     ELSE
       -- Setelah 13:00 - tidak ada break, ada pengurangan Rp 6.000
       GREATEST(0,
