@@ -116,6 +116,61 @@ export default async function handler(req, res) {
       });
     }
 
+    // POST /api/recalculate - Trigger historical data recalculation
+    if (method === 'POST' && query.__path === 'recalculate') {
+      try {
+        console.log('Recalculation endpoint called');
+
+        const supabaseUrl = process.env.SUPABASE_URL;
+        const supabaseKey = process.env.SUPABASE_ANON_KEY;
+
+        if (!supabaseUrl || !supabaseKey) {
+          return res.status(500).json({
+            success: false,
+            error: 'Supabase credentials not configured'
+          });
+        }
+
+        const supabase = createClient(supabaseUrl, supabaseKey);
+
+        // Execute the recalculation SQL script
+        const fs = require('fs');
+        const path = require('path');
+        const sqlScript = fs.readFileSync(path.join(__dirname, 'supabase/recalculate-historical.sql'), 'utf8');
+
+        console.log('Executing recalculation SQL script...');
+
+        const { error: execError } = await supabase.rpc('execute_sql', {
+          sql: sqlScript
+        });
+
+        if (execError) {
+          console.error('Recalculation failed:', execError);
+          return res.status(500).json({
+            success: false,
+            error: 'Recalculation failed',
+            details: execError.message
+          });
+        }
+
+        console.log('Recalculation completed successfully');
+
+        return res.status(200).json({
+          success: true,
+          message: 'Historical data recalculation completed',
+          details: 'All attendance records have been updated with new deduction logic'
+        });
+
+      } catch (error) {
+        console.error('Recalculation endpoint error:', error);
+        return res.status(500).json({
+          success: false,
+          error: 'Internal Server Error',
+          message: error.message
+        });
+      }
+    }
+
     // POST /api/attendance - Submit attendance
     if (method === 'POST') {
       const {
