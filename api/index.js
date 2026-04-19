@@ -133,16 +133,58 @@ export default async function handler(req, res) {
 
         const supabase = createClient(supabaseUrl, supabaseKey);
 
-        // Execute the recalculation SQL script
+        // Execute the recalculation SQL script using REST API
         const fs = require('fs');
         const path = require('path');
         const sqlScript = fs.readFileSync(path.join(__dirname, 'supabase/recalculate-historical.sql'), 'utf8');
 
-        console.log('Executing recalculation SQL script...');
+        console.log('Executing recalculation SQL script via REST API...');
 
-        const { error: execError } = await supabase.rpc('execute_sql', {
-          sql: sqlScript
-        });
+        const { error: queryError } = await supabase
+          .from('_supabase_migrations')
+          .select('*')
+          .eq('name', 'recalculate-deduction-logic')
+          .order('version', { ascending: false })
+          .limit(1);
+
+        if (queryError) {
+          console.error('Migration check failed:', queryError);
+          return res.status(500).json({
+            success: false,
+            error: 'Failed to check for migration script'
+          });
+        }
+
+        // Check if migration exists
+        const migrationExists = queryError && queryError.length > 0;
+
+        if (!migrationExists) {
+          console.log('Creating migration script first...');
+
+          const { error: createError } = await supabase
+            .from('_supabase_migrations')
+            .insert([
+              {
+                name: 'recalculate-deduction-logic',
+                version: '2026041901',
+                sql: sqlScript
+              }
+            ]);
+
+          if (createError) {
+            console.error('Migration creation failed:', createError);
+            return res.status(500).json({
+              success: false,
+              error: 'Failed to create migration script'
+            });
+          }
+        }
+
+        // Execute the SQL directly using REST API
+        const { error: execError } = await supabase
+          .rest('POST', '/rest/v1/rpc/execute_sql', {
+            body: JSON.stringify({ sql: sqlScript })
+          });
 
         if (execError) {
           console.error('Recalculation failed:', execError);
