@@ -60,8 +60,8 @@ const Reports = {
             breakHours = 0;
             incentiveDeduction = 0;
         } else {
-            breakHours = 0;
-            incentiveDeduction = 6000;
+            breakHours = 1;
+            incentiveDeduction = 0;
         }
 
         const netHours = Math.max(0, rawHours - breakHours);

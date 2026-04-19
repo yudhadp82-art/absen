@@ -68,9 +68,9 @@ const Payslip = {
             breakHours = 0;
             incentiveDeduction = 0;
         } else {
-            // No break deduction but Rp 6,000 incentive deduction if checkout after 13:00
-            breakHours = 0;
-            incentiveDeduction = 6000;
+            // 1 hour break deduction if checkout after 13:00
+            breakHours = 1;
+            incentiveDeduction = 0;
         }
 
         const netHours = Math.max(0, rawHours - breakHours);

@@ -13,18 +13,18 @@ SET
   work_hours = CASE
     WHEN EXTRACT(HOUR FROM a.created_at) < 13 THEN
       -- Sebelum 13:00
-      0
+      GREATEST(0, (EXTRACT(EPOCH FROM (c.created_at - a.created_at)) / 3600))
     ELSE
-      -- Setelah 13:00
-      (EXTRACT(EPOCH FROM (c.created_at - a.created_at)) / 3600
+      -- Setelah 13:00: Kurangi 1 jam istirahat
+      GREATEST(0, (EXTRACT(EPOCH FROM (c.created_at - a.created_at)) / 3600) - 1)
     END,
   incentive = CASE
     WHEN EXTRACT(HOUR FROM a.created_at) < 13 THEN
       -- Sebelum 13:00: Full insentif tanpa pengurangan
-      (EXTRACT(EPOCH FROM (c.created_at - a.created_at)) / 3600 * 6000
+      GREATEST(0, (EXTRACT(EPOCH FROM (c.created_at - a.created_at)) / 3600)) * 6000
     ELSE
-      -- Setelah 13:00: Deduct Rp 6.000
-      ((EXTRACT(EPOCH FROM (c.created_at - a.created_at)) / 3600 * 6000) - 6000
+      -- Setelah 13:00: Kurangi 1 jam istirahat
+      GREATEST(0, (EXTRACT(EPOCH FROM (c.created_at - a.created_at)) / 3600) - 1) * 6000
     END
 FROM attendance a
 JOIN attendance c ON a.employee_id = c.employee_id
