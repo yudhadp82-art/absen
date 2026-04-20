@@ -1,5 +1,5 @@
 // Vercel Serverless Function for API
-// This handles API requests for the attendance system
+// This handles API requests for attendance system
 
 const { createClient } = require('@supabase/supabase-js');
 
@@ -123,83 +123,117 @@ export default async function handler(req, res) {
         console.log('Recalculation endpoint called');
         console.log('Request URL:', req.url);
         console.log('Request method:', req.method);
-        console.log('Query string:', req.url);
-        console.log('Request body:', JSON.stringify(req.body));
 
-        const supabaseUrl = process.env.SUPABASE_URL;
-        const supabaseKey = process.env.SUPABASE_ANON_KEY;
+        console.log('Starting historical data recalculation...');
 
-        if (!supabaseUrl || !supabaseKey) {
-          console.error('Missing Supabase credentials');
-          return res.status(500).json({
-            success: false,
-            error: 'Supabase credentials not configured'
-          });
+        // Get all checkin records that have matching checkout records
+        const { data: checkins, error: checkinsError } = await supabase
+          .from('attendance')
+          .select('*')
+          .eq('type', 'checkin');
+
+        if (checkinsError) {
+          throw new Error(`Failed to fetch checkins: ${checkinsError.message}`);
         }
 
-        const supabase = createClient(supabaseUrl, supabaseKey);
+        let updatedCount = 0;
 
-        // Execute the recalculation SQL script using Supabase client library
-        const fs = require('fs');
-        const path = require('path');
-        const sqlScript = fs.readFileSync(path.join(__dirname, 'supabase/recalculate-historical.sql'), 'utf8');
+        // Process each checkin record
+        for (const checkin of checkins) {
+          // Find the corresponding checkout for the same employee and date
+          const checkinDate = new Date(checkin.created_at).toISOString().split('T')[0];
 
-        console.log('Executing recalculation SQL script...');
-        console.log('SQL Script length:', sqlScript.length);
+          const { data: checkouts, error: checkoutsError } = await supabase
+            .from('attendance')
+            .select('*')
+            .eq('type', 'checkout')
+            .eq('employee_id', checkin.employee_id)
+            .gte('created_at', `${checkinDate}T00:00:00.000Z`)
+            .lt('created_at', `${checkinDate}T23:59:59.999Z`)
+            .order('created_at', { ascending: false })
+            .limit(1);
 
-        try {
-          // Use Supabase client to execute the SQL script directly
-          const { error: execError, data } = await supabase.rpc('execute_sql', {
-            sql: sqlScript
-          });
-
-          if (execError) {
-            console.error('SQL execution failed:', execError);
-            console.error('Error details:', JSON.stringify(execError));
-            return res.status(500).json({
-              success: false,
-              error: 'SQL execution failed',
-              details: execError.message || execError
-            });
+          if (checkoutsError) {
+            console.error(`Error fetching checkout for ${checkin.employee_id}:`, checkoutsError);
+            continue;
           }
 
-          console.log('SQL execution response:', JSON.stringify(data));
-          console.log('Records affected:', data?.records_affected || 'unknown');
-          console.log('=================================');
+          if (!checkouts || checkouts.length === 0) {
+            continue; // No checkout found for this date
+          }
 
-          return res.status(200).json({
-            success: true,
-            message: 'Historical data recalculation completed successfully',
-            details: 'All attendance records have been updated with new deduction logic',
-            recordsUpdated: data?.records_affected || 'unknown'
-          });
+          const checkout = checkouts[0];
 
-        } catch (error) {
-          console.error('=================================');
-          console.error('Recalculation endpoint error:', error);
-          console.error('Error message:', error.message);
-          console.error('Error stack:', error.stack);
-          return res.status(500).json({
-            success: false,
-            error: 'Internal Server Error',
-            message: error.message
-          });
+          // Calculate work hours and incentive
+          const checkinTime = new Date(checkin.created_at);
+          const checkoutTime = new Date(checkout.created_at);
+          const rawHours = (checkoutTime - checkinTime) / (1000 * 60 * 60);
+
+          if (!Number.isFinite(rawHours) || rawHours <= 0) {
+            continue;
+          }
+
+          // Calculate incentive deduction based on checkout time
+          const checkoutHour = checkoutTime.getHours();
+          let incentiveDeduction = 0;
+
+          if (checkoutHour < 1) {
+            incentiveDeduction = 3000; // Before 1:00 AM
+          } else if (checkoutHour >= 2) {
+            incentiveDeduction = 6000; // After 2:00 AM
+          }
+          // Between 1:00-2:00 AM → no deduction
+
+          const workHours = rawHours;
+          const rawIncentive = workHours * 6000;
+          let incentive = Math.max(0, rawIncentive - incentiveDeduction);
+
+          // Update checkin record
+          const { error: checkinUpdateError } = await supabase
+            .from('attendance')
+            .update({
+              work_hours: workHours,
+              incentive: incentive
+            })
+            .eq('id', checkin.id);
+
+          if (checkinUpdateError) {
+            console.error(`Error updating checkin ${checkin.id}:`, checkinUpdateError);
+            continue;
+          }
+
+          // Update checkout record
+          const { error: checkoutUpdateError } = await supabase
+            .from('attendance')
+            .update({
+              work_hours: workHours,
+              incentive: incentive
+            })
+            .eq('id', checkout.id);
+
+          if (checkoutUpdateError) {
+            console.error(`Error updating checkout ${checkout.id}:`, checkoutUpdateError);
+            continue;
+          }
+
+          updatedCount++;
         }
+
+        console.log(`Recalculation completed. Updated ${updatedCount} record pairs.`);
+        console.log('=================================');
+
+        return res.status(200).json({
+          success: true,
+          message: 'Historical data recalculation completed successfully',
+          recordsUpdated: updatedCount,
+          details: 'All attendance records have been updated with new incentive deduction logic: < 1:00 AM → -Rp 3.000, ≥ 2:00 AM → -Rp 6.000'
+        });
+
       } catch (error) {
         console.error('=================================');
         console.error('Recalculation endpoint error:', error);
         console.error('Error message:', error.message);
         console.error('Error stack:', error.stack);
-        return res.status(500).json({
-          success: false,
-          error: 'Internal Server Error',
-          message: error.message
-        });
-      }
-    }
-
-      } catch (error) {
-        console.error('Recalculation endpoint error:', error);
         return res.status(500).json({
           success: false,
           error: 'Internal Server Error',
