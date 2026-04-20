@@ -55,6 +55,76 @@ export default async function handler(req, res) {
       }
     }
 
+    // POST /api/update-deduction-rules - Update deduction rules to correct values
+    if (method === 'POST' && req.url === '/api/update-deduction-rules') {
+      try {
+        console.log('Updating deduction rules to correct values...');
+
+        // Delete existing rules
+        const { error: deleteError } = await supabase
+          .from('incentive_deductions')
+          .delete()
+          .neq('id', 0); // Delete all
+
+        if (deleteError) {
+          console.error('Error deleting old rules:', deleteError);
+        }
+
+        // Insert correct rules
+        const correctRules = [
+          {
+            checkout_hour: 0,
+            deduction_amount: 3000,
+            description: 'Pengurangan Rp 3.000 untuk checkout sebelum 1:00 pagi',
+            is_active: true
+          },
+          {
+            checkout_hour: 4,
+            deduction_amount: 6000,
+            description: 'Pengurangan Rp 6.000 untuk checkout setelah 3:00 pagi',
+            is_active: true
+          }
+        ];
+
+        const { data, error: insertError } = await supabase
+          .from('incentive_deductions')
+          .insert(correctRules)
+          .select();
+
+        if (insertError) {
+          return res.status(500).json({
+            success: false,
+            error: 'Failed to insert correct rules',
+            details: insertError.message
+          });
+        }
+
+        console.log('Deduction rules updated successfully:', data);
+
+        return res.status(200).json({
+          success: true,
+          message: 'Deduction rules updated to correct values',
+          details: {
+            deleted: deleteError ? 'failed' : 'success',
+            inserted: data,
+            newLogic: {
+              before_1am: 'Rp 3.000 deduction',
+              after_3am: 'Rp 6.000 deduction',
+              between_1am_3am: 'No deduction'
+            }
+          }
+        });
+
+      } catch (error) {
+        console.error('Update deduction rules error:', error);
+        return res.status(500).json({
+          success: false,
+          error: 'Internal Server Error',
+          message: error.message
+        });
+      }
+    }
+
     // POST /api/setup-deduction-table - Setup incentive deduction table
     if (method === 'POST' && req.url === '/api/setup-deduction-table') {
       try {
@@ -87,9 +157,9 @@ export default async function handler(req, res) {
               is_active: true
             },
             {
-              checkout_hour: 2,
+              checkout_hour: 4,
               deduction_amount: 6000,
-              description: 'Pengurangan Rp 6.000 untuk checkout setelah 2:00 pagi',
+              description: 'Pengurangan Rp 6.000 untuk checkout setelah 3:00 pagi',
               is_active: true
             }
           ];
@@ -413,10 +483,10 @@ export default async function handler(req, res) {
 
           if (checkoutHour < 1) {
             incentiveDeduction = 3000; // Before 1:00 AM
-          } else if (checkoutHour >= 2) {
-            incentiveDeduction = 6000; // After 2:00 AM
+          } else if (checkoutHour > 3) {
+            incentiveDeduction = 6000; // After 3:00 AM
           }
-          // Between 1:00-2:00 AM → no deduction
+          // Between 1:00-3:00 AM → no deduction
 
           const workHours = rawHours;
           const rawIncentive = workHours * 6000;
@@ -460,7 +530,7 @@ export default async function handler(req, res) {
           success: true,
           message: 'Historical data recalculation completed successfully',
           recordsUpdated: updatedCount,
-          details: 'All attendance records have been updated with new incentive deduction logic: < 1:00 AM → -Rp 3.000, ≥ 2:00 AM → -Rp 6.000'
+          details: 'All attendance records have been updated with new incentive deduction logic: < 1:00 AM → -Rp 3.000, > 3:00 AM → -Rp 6.000'
         });
 
       } catch (error) {

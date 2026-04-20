@@ -17,7 +17,7 @@ CREATE INDEX IF NOT EXISTS idx_incentive_deductions_active ON incentive_deductio
 -- Insert default deduction rules based on new incentive logic
 INSERT INTO incentive_deductions (checkout_hour, deduction_amount, description, is_active) VALUES
   (0, 3000, 'Pengurangan Rp 3.000 untuk checkout sebelum 1:00 pagi', true),
-  (2, 6000, 'Pengurangan Rp 6.000 untuk checkout setelah 2:00 pagi', true)
+  (4, 6000, 'Pengurangan Rp 6.000 untuk checkout setelah 3:00 pagi', true)
 ON CONFLICT (checkout_hour) DO NOTHING;
 
 -- Create function to automatically update updated_at

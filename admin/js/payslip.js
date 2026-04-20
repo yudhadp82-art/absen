@@ -66,11 +66,11 @@ const Payslip = {
         if (checkoutHour < 1) {
             // Checkout before 1:00 AM → Rp.3000 deduction
             incentiveDeduction = 3000;
-        } else if (checkoutHour >= 2) {
-            // Checkout at/after 2:00 AM → Rp.6000 deduction
+        } else if (checkoutHour > 3) {
+            // Checkout after 3:00 AM → Rp.6000 deduction
             incentiveDeduction = 6000;
         } else {
-            // Checkout between 1:00 AM and 2:00 AM → no deduction
+            // Checkout between 1:00 AM and 3:00 AM → no deduction
             incentiveDeduction = 0;
         }
 

@@ -6,8 +6,8 @@
 -- Only update checkout records that have corresponding checkin
 -- Logika perhitungan baru:
 -- - Checkout sebelum 1:00: Ada pengurangan Rp 3.000
--- - Checkout 1:00 - 2:00: Tidak ada pengurangan
--- - Checkout setelah 2:00: Ada pengurangan Rp 6.000
+-- - Checkout 1:00 - 3:00: Tidak ada pengurangan
+-- - Checkout setelah 3:00: Ada pengurangan Rp 6.000
 
 UPDATE attendance a
 SET
@@ -15,22 +15,22 @@ SET
     WHEN EXTRACT(HOUR FROM c.created_at) < 1 THEN
       -- Sebelum 1:00 AM
       GREATEST(0, (EXTRACT(EPOCH FROM (c.created_at - a.created_at)) / 3600))
-    WHEN EXTRACT(HOUR FROM c.created_at) >= 2 THEN
-      -- Setelah 2:00 AM
+    WHEN EXTRACT(HOUR FROM c.created_at) > 3 THEN
+      -- Setelah 3:00 AM
       GREATEST(0, (EXTRACT(EPOCH FROM (c.created_at - a.created_at)) / 3600))
     ELSE
-      -- Antara 1:00 - 2:00 AM
+      -- Antara 1:00 - 3:00 AM
       GREATEST(0, (EXTRACT(EPOCH FROM (c.created_at - a.created_at)) / 3600))
     END,
   incentive = CASE
     WHEN EXTRACT(HOUR FROM c.created_at) < 1 THEN
       -- Sebelum 1:00 AM: Kurangi Rp 3.000
       GREATEST(0, (EXTRACT(EPOCH FROM (c.created_at - a.created_at)) / 3600) * 6000 - 3000)
-    WHEN EXTRACT(HOUR FROM c.created_at) >= 2 THEN
-      -- Setelah 2:00 AM: Kurangi Rp 6.000
+    WHEN EXTRACT(HOUR FROM c.created_at) > 3 THEN
+      -- Setelah 3:00 AM: Kurangi Rp 6.000
       GREATEST(0, (EXTRACT(EPOCH FROM (c.created_at - a.created_at)) / 3600) * 6000 - 6000)
     ELSE
-      -- Antara 1:00 - 2:00 AM: Full insentif tanpa pengurangan
+      -- Antara 1:00 - 3:00 AM: Full insentif tanpa pengurangan
       GREATEST(0, (EXTRACT(EPOCH FROM (c.created_at - a.created_at)) / 3600)) * 6000
     END
 FROM attendance a
@@ -49,4 +49,4 @@ WHERE c.type = 'checkout'
   AND c.id > a.id; -- Only process unique pairs
 
 -- Note: This only updates checkout records. Checkin records will be updated with the same values
--- The logic is: checkout time < 1:00 = Rp 3.000 deduction, ≥ 2:00 = Rp 6.000 deduction
+-- The logic is: checkout time < 1:00 = Rp 3.000 deduction, > 3:00 = Rp 6.000 deduction
