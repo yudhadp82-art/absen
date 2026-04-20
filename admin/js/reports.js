@@ -77,7 +77,8 @@ const Reports = {
 
         return {
             workHours: netHours,
-            incentive
+            incentive,
+            deduction: incentiveDeduction
         };
     },
     formatCurrency(value) {
@@ -161,6 +162,7 @@ const Reports = {
                         <td></td>
                         <td></td>
                         <td></td>
+                        <td></td>
                     </tr>
                 `;
             }
@@ -179,6 +181,7 @@ const Reports = {
                     <td class="text-center">${checkin}</td>
                     <td class="text-center">${checkout}</td>
                     <td class="text-center">${hours}</td>
+                    <td class="text-right">${incentiveValue > 0 ? this.formatNumber(row.deduction) : ''}</td>
                     <td class="text-right">${incentive}</td>
                     <td></td>
                     <td></td>
@@ -222,6 +225,7 @@ const Reports = {
                                 <th>JAM MASUK</th>
                                 <th>JAM SELESAI</th>
                                 <th>JUMLAH JAM KERJA</th>
+                                <th>PENGURANG</th>
                                 <th>INSENTIF</th>
                                 <th>TTD</th>
                                 <th>KET</th>
@@ -231,6 +235,7 @@ const Reports = {
                             ${bodyRows}
                             <tr class="paper-total-row">
                                 <td colspan="5" class="text-right"><strong>JUMLAH:</strong></td>
+                                <td class="text-right"><strong>${this.formatNumber(incentiveRows.reduce((a, b) => a + (b.deduction || 0), 0))}</strong></td>
                                 <td class="text-right"><strong>${this.formatNumber(totalIncentive)}</strong></td>
                                 <td></td>
                                 <td></td>
@@ -608,6 +613,7 @@ const Reports = {
                     <td class="text-center">${day.checkout ? API.formatTime(day.checkout) : '-'}</td>
                     <td class="text-center">${day.overtime ? API.formatTime(day.overtime) : '-'}</td>
                     <td class="text-center">${calc.workHours.toFixed(2)}</td>
+                    <td class="text-right">${this.formatNumber(calc.deduction)}</td>
                     <td class="text-right">${this.formatNumber(calc.incentive)}</td>
                 </tr>
             `;
@@ -639,6 +645,7 @@ const Reports = {
             employeeName,
             totalHours,
             totalIncentive,
+            totalDeduction: sortedDays.reduce((sum, day) => sum + this.calculateIncentive({ checkin_time: day.checkin, checkout_time: day.checkout }).deduction, 0),
             days: sortedDays
         };
 
@@ -707,6 +714,7 @@ const Reports = {
                     day.checkin ? API.formatTime(day.checkin) : '-',
                     day.checkout ? API.formatTime(day.checkout) : '-',
                     calc.workHours.toFixed(2),
+                    this.formatNumber(calc.deduction),
                     this.formatNumber(calc.incentive),
                     ''
                 ];
@@ -715,25 +723,27 @@ const Reports = {
             tableBody.push([
                 { content: 'JUMLAH TOTAL:', colSpan: 4, styles: { halign: 'right', fontStyle: 'bold' } },
                 { content: detail.totalHours.toFixed(2), styles: { halign: 'center', fontStyle: 'bold' } },
+                { content: this.formatNumber(detail.totalDeduction), styles: { halign: 'right', fontStyle: 'bold' } },
                 { content: this.formatNumber(detail.totalIncentive), styles: { halign: 'right', fontStyle: 'bold' } },
                 ''
             ]);
 
             doc.autoTable({
                 startY: cursorY,
-                head: [['NO.', 'TANGGAL', 'JAM MASUK', 'JAM PULANG', 'JAM KERJA', 'INSENTIF', 'PARAIF']],
+                head: [['NO.', 'TANGGAL', 'JAM MASUK', 'JAM PULANG', 'JAM KERJA', 'PENGURANG', 'INSENTIF', 'PARAF']],
                 body: tableBody,
                 margin: { left: margin, right: margin },
-                styles: { fontSize: 10, cellPadding: 3 },
+                styles: { fontSize: 9, cellPadding: 2.5 },
                 headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold', halign: 'center' },
                 columnStyles: {
-                    0: { halign: 'center', cellWidth: 12 },
+                    0: { halign: 'center', cellWidth: 10 },
                     1: { halign: 'left' },
                     2: { halign: 'center' },
                     3: { halign: 'center' },
                     4: { halign: 'center' },
                     5: { halign: 'right' },
-                    6: { halign: 'center', cellWidth: 20 }
+                    6: { halign: 'right' },
+                    7: { halign: 'center', cellWidth: 15 }
                 },
                 theme: 'grid',
             });

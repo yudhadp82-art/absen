@@ -83,7 +83,7 @@ const Payslip = {
             incentive = Math.max(0, incentive - incentiveDeduction);
         }
 
-        return { workHours: netHours, incentive };
+        return { workHours: netHours, incentive, deduction: incentiveDeduction };
     },
 
     formatCurrency(value) {
@@ -188,12 +188,14 @@ const Payslip = {
                     checkin: day.checkin,
                     checkout: day.checkout,
                     workHours: calc.workHours,
-                    incentive: calc.incentive
+                    incentive: calc.incentive,
+                    deduction: calc.deduction
                 };
             });
 
             const totalIncentive = slipRows.reduce((sum, r) => sum + r.incentive, 0);
             const totalHours = slipRows.reduce((sum, r) => sum + r.workHours, 0);
+            const totalDeduction = slipRows.reduce((sum, r) => sum + r.deduction, 0);
 
             this.currentSlipData = {
                 employeeId,
@@ -202,7 +204,8 @@ const Payslip = {
                 endDate,
                 rows: slipRows,
                 totalIncentive,
-                totalHours
+                totalHours,
+                totalDeduction
             };
 
             this.renderSlipPreview();
@@ -229,6 +232,7 @@ const Payslip = {
             const checkin = row.checkin ? API.formatTime(row.checkin) : '-';
             const checkout = row.checkout ? API.formatTime(row.checkout) : '-';
             const hours = row.workHours > 0 ? row.workHours.toFixed(2) : '-';
+            const deduction = row.deduction > 0 ? `Rp ${this.formatNumber(row.deduction)}` : '-';
             const incentive = row.incentive > 0 ? `Rp ${this.formatNumber(row.incentive)}` : '-';
 
             return `
@@ -237,6 +241,7 @@ const Payslip = {
                     <td class="text-center">${checkin}</td>
                     <td class="text-center">${checkout}</td>
                     <td class="text-center">${hours}</td>
+                    <td class="text-right">${deduction}</td>
                     <td class="text-right">${incentive}</td>
                 </tr>
             `;
@@ -278,13 +283,15 @@ const Payslip = {
                                 <th>Masuk</th>
                                 <th>Keluar</th>
                                 <th>Jumlah Jam</th>
+                                <th>Pengurang</th>
                                 <th>Insentif</th>
                             </tr>
                         </thead>
                         <tbody>
                             ${bodyRows}
                             <tr class="slip-total-row">
-                                <td colspan="4"><strong>Total Insentif:</strong></td>
+                                <td colspan="4"><strong>Total:</strong></td>
+                                <td class="text-right"><strong>Rp ${this.formatNumber(d.totalDeduction)}</strong></td>
                                 <td class="text-right"><strong>Rp ${this.formatNumber(d.totalIncentive)}</strong></td>
                             </tr>
                         </tbody>
@@ -371,19 +378,21 @@ const Payslip = {
                 const checkin = row.checkin ? API.formatTime(row.checkin) : '-';
                 const checkout = row.checkout ? API.formatTime(row.checkout) : '-';
                 const hours = row.workHours > 0 ? row.workHours.toFixed(2) : '-';
+                const deduction = row.deduction > 0 ? `Rp ${this.formatNumber(row.deduction)}` : '-';
                 const incentive = row.incentive > 0 ? `Rp ${this.formatNumber(row.incentive)}` : '-';
-                return [dateStr, checkin, checkout, hours, incentive];
+                return [dateStr, checkin, checkout, hours, deduction, incentive];
             });
 
             // Add total row
             tableBody.push([
-                { content: 'Total Insentif:', colSpan: 4, styles: { halign: 'right', fontStyle: 'bold' } },
+                { content: 'Total:', colSpan: 4, styles: { halign: 'right', fontStyle: 'bold' } },
+                { content: `Rp ${this.formatNumber(d.totalDeduction)}`, styles: { halign: 'right', fontStyle: 'bold' } },
                 { content: `Rp ${this.formatNumber(d.totalIncentive)}`, styles: { halign: 'right', fontStyle: 'bold' } }
             ]);
 
             doc.autoTable({
                 startY: cursorY,
-                head: [['Tanggal', 'Masuk', 'Keluar', 'Jumlah Jam', 'Insentif']],
+                head: [['Tanggal', 'Masuk', 'Keluar', 'Jumlah Jam', 'Pengurang', 'Insentif']],
                 body: tableBody,
                 margin: { left: margin, right: margin },
                 styles: { fontSize: 10, cellPadding: 3 },
@@ -393,7 +402,8 @@ const Payslip = {
                     1: { halign: 'center' },
                     2: { halign: 'center' },
                     3: { halign: 'center' },
-                    4: { halign: 'right' }
+                    4: { halign: 'right' },
+                    5: { halign: 'right' }
                 },
                 theme: 'grid',
             });
@@ -531,7 +541,8 @@ const Payslip = {
                         checkin: day.checkin,
                         checkout: day.checkout,
                         workHours: calc.workHours,
-                        incentive: calc.incentive
+                        incentive: calc.incentive,
+                        deduction: calc.deduction
                     };
                 });
 
@@ -540,6 +551,8 @@ const Payslip = {
 
                 processedCount++;
 
+                const totalDeduction = slipRows.reduce((sum, r) => sum + r.deduction, 0);
+
                 this.currentSlipData = {
                     employeeId: emp.employee_id,
                     employeeName: emp.employee_name,
@@ -547,6 +560,7 @@ const Payslip = {
                     endDate,
                     rows: slipRows,
                     totalIncentive,
+                    totalDeduction,
                     totalHours: slipRows.reduce((sum, r) => sum + r.workHours, 0)
                 };
 
@@ -563,6 +577,7 @@ const Payslip = {
                     const checkin = row.checkin ? API.formatTime(row.checkin) : '-';
                     const checkout = row.checkout ? API.formatTime(row.checkout) : '-';
                     const hours = row.workHours > 0 ? row.workHours.toFixed(2) : '-';
+                    const deduction = row.deduction > 0 ? `Rp ${this.formatNumber(row.deduction)}` : '-';
                     const incentive = row.incentive > 0 ? `Rp ${this.formatNumber(row.incentive)}` : '-';
                     return `
                         <tr>
@@ -570,6 +585,7 @@ const Payslip = {
                             <td class="text-center">${checkin}</td>
                             <td class="text-center">${checkout}</td>
                             <td class="text-center">${hours}</td>
+                            <td class="text-right">${deduction}</td>
                             <td class="text-right">${incentive}</td>
                         </tr>
                     `;
@@ -600,13 +616,15 @@ const Payslip = {
                                         <th>Masuk</th>
                                         <th>Keluar</th>
                                         <th>Jumlah Jam</th>
+                                        <th>Pengurang</th>
                                         <th>Insentif</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     ${bodyRows}
                                     <tr class="slip-total-row">
-                                        <td colspan="4"><strong>Total Insentif:</strong></td>
+                                        <td colspan="4"><strong>Total:</strong></td>
+                                        <td class="text-right"><strong>Rp ${this.formatNumber(d.totalDeduction)}</strong></td>
                                         <td class="text-right"><strong>Rp ${this.formatNumber(d.totalIncentive)}</strong></td>
                                     </tr>
                                 </tbody>
@@ -695,18 +713,20 @@ const Payslip = {
             const checkin = row.checkin ? API.formatTime(row.checkin) : '-';
             const checkout = row.checkout ? API.formatTime(row.checkout) : '-';
             const hours = row.workHours > 0 ? row.workHours.toFixed(1) : '-';
+            const deduction = row.deduction > 0 ? 'Rp ' + this.formatNumber(row.deduction) : '-';
             const incentive = row.incentive > 0 ? 'Rp ' + this.formatNumber(row.incentive) : '-';
-            return [dateStr, checkin, checkout, hours, incentive];
+            return [dateStr, checkin, checkout, hours, deduction, incentive];
         });
 
         tableBody.push([
             { content: 'TOTAL', colSpan: 4, styles: { fontStyle: 'bold', halign: 'right' } },
+            { content: 'Rp ' + this.formatNumber(d.totalDeduction), styles: { fontStyle: 'bold', halign: 'right' } },
             { content: 'Rp ' + this.formatNumber(d.totalIncentive), styles: { fontStyle: 'bold', halign: 'right' } }
         ]);
 
         doc.autoTable({
             startY: curY,
-            head: [['Tgl', 'Masuk', 'Keluar', 'Jam', 'Insentif']],
+            head: [['Tgl', 'Masuk', 'Keluar', 'Jam', 'Pengurang', 'Insentif']],
             body: tableBody,
             margin: { left: startX, right: doc.internal.pageSize.getWidth() - (startX + innerW) },
             tableWidth: innerW,
@@ -717,7 +737,8 @@ const Payslip = {
                 1: { halign: 'center' },
                 2: { halign: 'center' },
                 3: { halign: 'center' },
-                4: { halign: 'right' }
+                4: { halign: 'right' },
+                5: { halign: 'right' }
             },
             theme: 'grid',
             pageBreak: 'avoid',
@@ -782,7 +803,7 @@ const Payslip = {
                         checkin_time: day.checkin,
                         checkout_time: day.checkout
                     });
-                    return { date: day.date, checkin: day.checkin, checkout: day.checkout, workHours: calc.workHours, incentive: calc.incentive };
+                    return { date: day.date, checkin: day.checkin, checkout: day.checkout, workHours: calc.workHours, deduction: calc.deduction, incentive: calc.incentive };
                 });
 
                 const totalIncentive = slipRows.reduce((sum, r) => sum + r.incentive, 0);
@@ -793,6 +814,7 @@ const Payslip = {
                     employeeName: emp.employee_name,
                     rows: slipRows,
                     totalIncentive,
+                    totalDeduction: slipRows.reduce((sum, r) => sum + r.deduction, 0),
                     totalHours: slipRows.reduce((sum, r) => sum + r.workHours, 0)
                 });
             }
