@@ -3,6 +3,52 @@
 
 const { createClient } = require('@supabase/supabase-js');
 
+// Cache for deduction rules to avoid repeated database calls
+let deductionRulesCache = null;
+let cacheExpiry = null;
+
+async function getDeductionRules(supabase) {
+  // Check if cache is still valid (5 minutes)
+  if (deductionRulesCache && cacheExpiry && Date.now() < cacheExpiry) {
+    return deductionRulesCache;
+  }
+
+  // Fetch fresh rules from database
+  const { data, error } = await supabase
+    .from('incentive_deductions')
+    .select('*')
+    .eq('is_active', true)
+    .order('checkout_hour', { ascending: true });
+
+  if (error) {
+    console.warn('Failed to fetch deduction rules, using defaults:', error.message);
+    // Fallback to default rules
+    return [
+      { checkout_hour: 0, deduction_amount: 3000 },
+      { checkout_hour: 2, deduction_amount: 6000 }
+    ];
+  }
+
+  // Cache the rules
+  deductionRulesCache = data || [];
+  cacheExpiry = Date.now() + (5 * 60 * 1000); // 5 minutes cache
+
+  return deductionRulesCache;
+}
+
+function calculateDeduction(checkoutHour, deductionRules) {
+  // Sort rules by checkout_hour descending to find the highest matching rule
+  const sortedRules = [...deductionRules].sort((a, b) => b.checkout_hour - a.checkout_hour);
+
+  for (const rule of sortedRules) {
+    if (checkoutHour >= rule.checkout_hour) {
+      return rule.deduction_amount;
+    }
+  }
+
+  return 0; // No deduction if no rules match
+}
+
 function getDayRange(date) {
   const start = `${date}T00:00:00.000Z`;
   const endDate = new Date(`${date}T00:00:00.000Z`);
@@ -27,7 +73,7 @@ function formatDateKey(timestamp) {
   return new Date(timestamp).toISOString().split('T')[0];
 }
 
-function calculateWorkAndIncentive(checkinTime, checkoutTime, hourlyRate = 6000, roundingUnit = 1000) {
+function calculateWorkAndIncentive(checkinTime, checkoutTime, deductionRules, hourlyRate = 6000, roundingUnit = 1000) {
   if (!checkinTime || !checkoutTime) {
     return {
       workHours: 0,
@@ -46,24 +92,11 @@ function calculateWorkAndIncentive(checkinTime, checkoutTime, hourlyRate = 6000,
     };
   }
 
-  // Check checkout hour for break hours and deduction
+  // Calculate incentive deduction based on checkout time using database rules
   const checkoutHour = checkout.getHours();
-  let breakHours = 0;
-  let incentiveDeduction = 0;
+  const incentiveDeduction = calculateDeduction(checkoutHour, deductionRules);
 
-  // Incentive deduction based on checkout time
-  if (checkoutHour < 1) {
-    // Checkout before 1:00 AM → Rp.3000 deduction
-    incentiveDeduction = 3000;
-  } else if (checkoutHour >= 2) {
-    // Checkout at/after 2:00 AM → Rp.6000 deduction
-    incentiveDeduction = 6000;
-  } else {
-    // Checkout between 1:00 AM and 2:00 AM → no deduction
-    incentiveDeduction = 0;
-  }
-
-  const workHours = Math.max(0, rawHours - breakHours);
+  const workHours = rawHours;
   let incentive = Math.round((workHours * hourlyRate) / roundingUnit) * roundingUnit;
 
   // Apply incentive deduction if applicable
@@ -167,6 +200,14 @@ export default async function handler(req, res) {
   }
 
   const supabase = createClient(supabaseUrl, supabaseKey);
+
+  // Fetch deduction rules for incentive calculations
+  let deductionRules = [];
+  try {
+    deductionRules = await getDeductionRules(supabase);
+  } catch (error) {
+    console.warn('Failed to fetch deduction rules, will use defaults:', error.message);
+  }
 
   try {
     const { date, department, employeeId, startDate, endDate, mode } = req.query;
@@ -311,7 +352,7 @@ export default async function handler(req, res) {
         }
 
         if (item.checkin_time && item.checkout_time) {
-          const calc = calculateWorkAndIncentive(item.checkin_time, item.checkout_time);
+          const calc = calculateWorkAndIncentive(item.checkin_time, item.checkout_time, deductionRules);
           payment.completedDays += 1;
           payment.workHours += calc.workHours;
           payment.incentive += calc.incentive;

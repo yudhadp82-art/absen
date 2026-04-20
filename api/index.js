@@ -55,6 +55,110 @@ export default async function handler(req, res) {
       }
     }
 
+    // POST /api/setup-deduction-table - Setup incentive deduction table
+    if (method === 'POST' && req.url === '/api/setup-deduction-table') {
+      try {
+        console.log('Setting up incentive deduction table...');
+
+        // Step 1: Check if table exists
+        const { data: existingDeductions, error: checkError } = await supabase
+          .from('incentive_deductions')
+          .select('checkout_hour');
+
+        if (checkError && checkError.code === '42P01') {
+          // Table doesn't exist yet
+          console.log('Table does not exist, will need manual setup');
+          return res.status(500).json({
+            success: false,
+            error: 'Table does not exist',
+            message: 'Please run the SQL script manually in Supabase SQL Editor',
+            sqlScript: 'supabase/create-deduction-table.sql'
+          });
+        }
+
+        let insertResult;
+        if (!existingDeductions || existingDeductions.length === 0) {
+          // Insert default rules
+          const deductionData = [
+            {
+              checkout_hour: 0,
+              deduction_amount: 3000,
+              description: 'Pengurangan Rp 3.000 untuk checkout sebelum 1:00 pagi',
+              is_active: true
+            },
+            {
+              checkout_hour: 2,
+              deduction_amount: 6000,
+              description: 'Pengurangan Rp 6.000 untuk checkout setelah 2:00 pagi',
+              is_active: true
+            }
+          ];
+
+          insertResult = await supabase
+            .from('incentive_deductions')
+            .insert(deductionData)
+            .select();
+
+          console.log('Inserted default deduction rules:', insertResult);
+        } else {
+          console.log('Deduction rules already exist');
+        }
+
+        return res.status(200).json({
+          success: true,
+          message: 'Incentive deduction table setup completed',
+          details: {
+            tableExists: true,
+            rulesInserted: existingDeductions && existingDeductions.length > 0 ? 'already_exists' : 'new',
+            existingRules: existingDeductions || []
+          }
+        });
+
+      } catch (error) {
+        console.error('Setup error:', error);
+        return res.status(500).json({
+          success: false,
+          error: 'Setup failed',
+          message: error.message,
+          note: 'Please run the SQL script manually in Supabase SQL Editor: supabase/create-deduction-table.sql'
+        });
+      }
+    }
+
+    // GET /api/deduction-rules - Get all deduction rules
+    if (method === 'GET' && req.url === '/api/deduction-rules') {
+      try {
+        const { data, error } = await supabase
+          .from('incentive_deductions')
+          .select('*')
+          .order('checkout_hour', { ascending: true });
+
+        if (error) {
+          if (error.code === '42P01') {
+            return res.status(404).json({
+              success: false,
+              error: 'Table does not exist',
+              message: 'Please run /api/setup-deduction-table first or SQL script manually'
+            });
+          }
+          throw error;
+        }
+
+        return res.status(200).json({
+          success: true,
+          data: data || []
+        });
+
+      } catch (error) {
+        console.error('Fetch deduction rules error:', error);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to fetch deduction rules',
+          message: error.message
+        });
+      }
+    }
+
     // GET /api/attendance - Get attendance history
     if (method === 'GET') {
       const { employeeId, date, startDate: qStart, endDate: qEnd, limit = 100, offset = 0 } = query;
@@ -114,6 +218,136 @@ export default async function handler(req, res) {
         data: transformedData,
         count: transformedData.length
       });
+    }
+
+    // POST /api/manage-deductions - Add new deduction rule
+    if (method === 'POST' && req.url === '/api/manage-deductions') {
+      try {
+        const { checkout_hour, deduction_amount, description, is_active } = req.body;
+
+        if (!checkout_hour || isNaN(checkout_hour) || checkout_hour < 0 || checkout_hour > 23) {
+          return res.status(400).json({
+            success: false,
+            error: 'Invalid checkout_hour. Must be between 0-23'
+          });
+        }
+
+        if (!deduction_amount || isNaN(deduction_amount) || deduction_amount < 0) {
+          return res.status(400).json({
+            success: false,
+            error: 'Invalid deduction_amount. Must be a positive number'
+          });
+        }
+
+        const { data, error } = await supabase
+          .from('incentive_deductions')
+          .insert({
+            checkout_hour,
+            deduction_amount,
+            description: description || '',
+            is_active: is_active !== undefined ? is_active : true
+          })
+          .select()
+          .single();
+
+        if (error) {
+          return res.status(500).json({
+            success: false,
+            error: 'Failed to add deduction rule',
+            details: error.message
+          });
+        }
+
+        return res.status(201).json({
+          success: true,
+          message: 'Deduction rule added successfully',
+          data
+        });
+
+      } catch (error) {
+        console.error('Add deduction rule error:', error);
+        return res.status(500).json({
+          success: false,
+          error: 'Internal Server Error',
+          message: error.message
+        });
+      }
+    }
+
+    // PATCH /api/manage-deductions/:id - Update deduction rule
+    if (method === 'PATCH' && req.url.match(/^\/api\/manage-deductions\/\d+$/)) {
+      try {
+        const id = parseInt(req.url.split('/').pop());
+        const { is_active, checkout_hour, deduction_amount, description } = req.body;
+
+        const updateData = {};
+        if (is_active !== undefined) updateData.is_active = is_active;
+        if (checkout_hour !== undefined) updateData.checkout_hour = checkout_hour;
+        if (deduction_amount !== undefined) updateData.deduction_amount = deduction_amount;
+        if (description !== undefined) updateData.description = description;
+
+        const { data, error } = await supabase
+          .from('incentive_deductions')
+          .update(updateData)
+          .eq('id', id)
+          .select()
+          .single();
+
+        if (error) {
+          return res.status(500).json({
+            success: false,
+            error: 'Failed to update deduction rule',
+            details: error.message
+          });
+        }
+
+        return res.status(200).json({
+          success: true,
+          message: 'Deduction rule updated successfully',
+          data
+        });
+
+      } catch (error) {
+        console.error('Update deduction rule error:', error);
+        return res.status(500).json({
+          success: false,
+          error: 'Internal Server Error',
+          message: error.message
+        });
+      }
+    }
+
+    // DELETE /api/manage-deductions/:id - Delete deduction rule
+    if (method === 'DELETE' && req.url.match(/^\/api\/manage-deductions\/\d+$/)) {
+      try {
+        const id = parseInt(req.url.split('/').pop());
+
+        const { error } = await supabase
+          .from('incentive_deductions')
+          .delete()
+          .eq('id', id);
+
+        if (error) {
+          return res.status(500).json({
+            success: false,
+            error: 'Failed to delete deduction rule',
+            details: error.message
+          });
+        }
+
+        return res.status(200).json({
+          success: true,
+          message: 'Deduction rule deleted successfully'
+        });
+
+      } catch (error) {
+        console.error('Delete deduction rule error:', error);
+        return res.status(500).json({
+          success: false,
+          error: 'Internal Server Error',
+          message: error.message
+        });
+      }
     }
 
     // POST /api/recalculate - Trigger historical data recalculation
