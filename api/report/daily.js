@@ -48,17 +48,18 @@ function calculateWorkAndIncentive(checkinTime, checkoutTime, hourlyRate = 6000,
 
   // Check checkout hour for break hours and deduction
   const checkoutHour = checkout.getHours();
-  const isBeforeOnePM = checkoutHour < 13; // Before 13:00 (1:00 PM)
   let breakHours = 0;
   let incentiveDeduction = 0;
 
-  if (isBeforeOnePM) {
-    // No break deduction and no incentive deduction if checkout before 13:00
-    breakHours = 0;
-    incentiveDeduction = 0;
+  // Incentive deduction based on checkout time
+  if (checkoutHour < 1) {
+    // Checkout before 1:00 AM → Rp.3000 deduction
+    incentiveDeduction = 3000;
+  } else if (checkoutHour >= 2) {
+    // Checkout at/after 2:00 AM → Rp.6000 deduction
+    incentiveDeduction = 6000;
   } else {
-    // 1 hour break deduction if checkout after 13:00
-    breakHours = 1;
+    // Checkout between 1:00 AM and 2:00 AM → no deduction
     incentiveDeduction = 0;
   }
 

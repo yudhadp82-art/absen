@@ -52,15 +52,18 @@ const Reports = {
         }
 
         const checkoutHour = checkout.getHours();
-        const isBeforeOnePM = checkoutHour < 13;
         let breakHours = 0;
         let incentiveDeduction = 0;
 
-        if (isBeforeOnePM) {
-            breakHours = 0;
-            incentiveDeduction = 0;
+        // Incentive deduction based on checkout time
+        if (checkoutHour < 1) {
+            // Checkout before 1:00 AM → Rp.3000 deduction
+            incentiveDeduction = 3000;
+        } else if (checkoutHour >= 2) {
+            // Checkout at/after 2:00 AM → Rp.6000 deduction
+            incentiveDeduction = 6000;
         } else {
-            breakHours = 1;
+            // Checkout between 1:00 AM and 2:00 AM → no deduction
             incentiveDeduction = 0;
         }
 
