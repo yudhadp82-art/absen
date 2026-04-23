@@ -496,8 +496,28 @@ const Payslip = {
             if (!empResponse.success) throw new Error('Gagal memuat data karyawan');
 
             const employees = empResponse.data.filter(e => e.is_active !== false);
+
+            // Filter attendance records by date range
+            const filteredAttendance = employees.map(emp => {
+                const empAttendance = attResponse.data.filter(att =>
+                    att.employee_id === emp.employee_id &&
+                    att.timestamp >= `${startDate}T00:00:00.000Z` &&
+                    att.timestamp <= `${endDate}T23:59:59.999Z`
+                );
+                return {
+                    employee_id: emp.employee_id,
+                    employee_name: emp.employee_name,
+                    attendance: empAttendance
+                };
+            });
+
+            // Generate slips only for employees with attendance in date range
             const container = document.getElementById('slipPreviewContainer');
             container.innerHTML = '';
+
+            let processedCount = 0;
+
+            for (const emp of filteredAttendance) {
 
             let processedCount = 0;
 
