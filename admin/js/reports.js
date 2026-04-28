@@ -52,6 +52,7 @@ const Reports = {
         }
 
         const checkoutHour = checkout.getHours();
+        const checkoutMinute = checkout.getMinutes();
         let breakHours = 0;
         let incentiveDeduction = 0;
 
@@ -60,6 +61,9 @@ const Reports = {
             incentiveDeduction = 3000;
         } else if (checkoutHour >= 15) {
             incentiveDeduction = 6000;
+        } else if (checkoutHour === 14 || (checkoutHour === 13 && checkoutMinute >= 59)) {
+            // Checkout between 13:59 - 14:59
+            incentiveDeduction = 3000;
         } else {
             incentiveDeduction = 0;
         }

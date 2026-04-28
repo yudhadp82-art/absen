@@ -94,11 +94,15 @@ function calculateWorkAndIncentive(checkinTime, checkoutTime, deductionRules, ho
 
   // Calculate incentive deduction based on checkout time
   const checkoutHour = checkout.getHours();
+  const checkoutMinute = checkout.getMinutes();
   let incentiveDeduction = 0;
   if (checkoutHour < 13) {
       incentiveDeduction = 3000;
   } else if (checkoutHour >= 15) {
       incentiveDeduction = 6000;
+  } else if (checkoutHour === 14 || (checkoutHour === 13 && checkoutMinute >= 59)) {
+      // Checkout between 13:59 - 14:59
+      incentiveDeduction = 3000;
   }
 
   const workHours = rawHours;

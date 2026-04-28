@@ -51,6 +51,8 @@ export async function GET(request) {
   const id = searchParams.get('id');
   const employeeId = searchParams.get('employeeId');
   const date = searchParams.get('date');
+  const startDate = searchParams.get('startDate');
+  const endDate = searchParams.get('endDate');
   const limit = parseInt(searchParams.get('limit') || '100');
   const offset = parseInt(searchParams.get('offset') || '0');
 
@@ -74,14 +76,26 @@ export async function GET(request) {
     }
 
     if (date) {
-      const startDate = new Date(date);
-      startDate.setHours(0, 0, 0, 0);
+      const start = new Date(date);
+      start.setHours(0, 0, 0, 0);
 
-      const endDate = new Date(date);
-      endDate.setHours(23, 59, 59, 999);
+      const end = new Date(date);
+      end.setHours(23, 59, 59, 999);
 
-      queryBuilder = queryBuilder.gte('created_at', startDate.toISOString())
-                           .lte('created_at', endDate.toISOString());
+      queryBuilder = queryBuilder.gte('created_at', start.toISOString())
+                           .lte('created_at', end.toISOString());
+    }
+
+    if (startDate) {
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+      queryBuilder = queryBuilder.gte('created_at', start.toISOString());
+    }
+
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      queryBuilder = queryBuilder.lte('created_at', end.toISOString());
     }
 
     const { data, error } = await queryBuilder;

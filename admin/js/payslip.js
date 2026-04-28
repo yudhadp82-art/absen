@@ -59,6 +59,7 @@ const Payslip = {
 
         // Check checkout hour for break hours and deduction
         const checkoutHour = checkout.getHours();
+        const checkoutMinute = checkout.getMinutes();
         let breakHours = 0;
         let incentiveDeduction = 0;
 
@@ -67,6 +68,9 @@ const Payslip = {
             incentiveDeduction = 3000;
         } else if (checkoutHour >= 15) {
             incentiveDeduction = 6000;
+        } else if (checkoutHour === 14 || (checkoutHour === 13 && checkoutMinute >= 59)) {
+            // Checkout between 13:59 - 14:59
+            incentiveDeduction = 3000;
         } else {
             incentiveDeduction = 0;
         }
@@ -497,27 +501,9 @@ const Payslip = {
 
             const employees = empResponse.data.filter(e => e.is_active !== false);
 
-            // Filter attendance records by date range
-            const filteredAttendance = employees.map(emp => {
-                const empAttendance = attResponse.data.filter(att =>
-                    att.employee_id === emp.employee_id &&
-                    att.timestamp >= `${startDate}T00:00:00.000Z` &&
-                    att.timestamp <= `${endDate}T23:59:59.999Z`
-                );
-                return {
-                    employee_id: emp.employee_id,
-                    employee_name: emp.employee_name,
-                    attendance: empAttendance
-                };
-            });
-
-            // Generate slips only for employees with attendance in date range
+            // Generate slips for all employees
             const container = document.getElementById('slipPreviewContainer');
             container.innerHTML = '';
-
-            let processedCount = 0;
-
-            for (const emp of filteredAttendance) {
 
             let processedCount = 0;
 

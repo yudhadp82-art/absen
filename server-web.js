@@ -64,7 +64,7 @@ app.get('/api/health', async (req, res) => {
 // Get attendance history
 app.get('/api/attendance', async (req, res) => {
   try {
-    const { employeeId, date, startDate, endDate, limit = 100, offset = 0 } = req.query;
+    const { id, employeeId, date, startDate, endDate, limit = 100, offset = 0 } = req.query;
 
     let query = supabase
       .from('attendance')
@@ -74,6 +74,10 @@ app.get('/api/attendance', async (req, res) => {
       .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
 
     // Filter by employee ID if provided
+    if (id) {
+      query = query.eq('id', id).limit(1);
+    }
+
     if (employeeId) {
       query = query.eq('employee_id', employeeId);
     }
@@ -129,6 +133,13 @@ app.get('/api/attendance', async (req, res) => {
       timestamp: record.created_at,
       deviceId: record.device_id
     }));
+
+    if (id) {
+      return res.json({
+        success: true,
+        data: transformedData[0] || null
+      });
+    }
 
     res.json({
       success: true,
@@ -293,6 +304,188 @@ app.post('/api/attendance', async (req, res) => {
 
   } catch (error) {
     console.error('Error submitting attendance:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      message: error.message
+    });
+  }
+});
+
+// Update attendance record
+app.put('/api/attendance', async (req, res) => {
+  try {
+    const { id } = req.query;
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        error: 'Attendance ID is required'
+      });
+    }
+
+    const {
+      type,
+      timestamp,
+      employeeId,
+      employeeName,
+      latitude,
+      longitude,
+      accuracy,
+      address,
+      deviceId
+    } = req.body;
+
+    const updateData = {};
+    if (type) updateData.type = type;
+    if (timestamp) {
+      const parsed = new Date(timestamp);
+      if (Number.isNaN(parsed.getTime())) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid timestamp format'
+        });
+      }
+      updateData.created_at = parsed.toISOString();
+    }
+    if (employeeId) updateData.employee_id = employeeId;
+    if (employeeName) updateData.employee_name = employeeName;
+    if (latitude !== undefined) updateData.latitude = parseFloat(latitude);
+    if (longitude !== undefined) updateData.longitude = parseFloat(longitude);
+    if (accuracy !== undefined) updateData.accuracy = parseFloat(accuracy);
+    if (address !== undefined) updateData.address = address;
+    if (deviceId !== undefined) updateData.device_id = deviceId;
+
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'No update fields were provided'
+      });
+    }
+
+    const { data, error } = await supabase
+      .from('attendance')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .maybeSingle();
+
+    if (error) {
+      console.error('Supabase update error:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to update attendance record',
+        details: error.message
+      });
+    }
+
+    if (!data) {
+      return res.status(404).json({
+        success: false,
+        error: 'Attendance record not found'
+      });
+    }
+
+    const transformedData = {
+      id: data.id,
+      employeeId: data.employee_id,
+      employeeName: data.employee_name,
+      type: data.type,
+      location: {
+        latitude: parseFloat(data.latitude),
+        longitude: parseFloat(data.longitude),
+        accuracy: data.accuracy,
+        address: data.address
+      },
+      timestamp: data.created_at,
+      deviceId: data.device_id
+    };
+
+    res.json({
+      success: true,
+      message: 'Attendance record updated successfully',
+      data: transformedData
+    });
+  } catch (error) {
+    console.error('Error updating attendance:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      message: error.message
+    });
+  }
+});
+
+// Delete attendance record or records by employee/date
+app.delete('/api/attendance', async (req, res) => {
+  try {
+    const { id, employeeId, date } = req.query;
+
+    if (id) {
+      const { data, error } = await supabase
+        .from('attendance')
+        .delete()
+        .eq('id', id)
+        .select()
+        .maybeSingle();
+
+      if (error) {
+        console.error('Supabase delete error:', error);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to delete attendance record',
+          details: error.message
+        });
+      }
+
+      if (!data) {
+        return res.status(404).json({
+          success: false,
+          error: 'Attendance record not found'
+        });
+      }
+
+      return res.json({
+        success: true,
+        message: 'Attendance record deleted successfully'
+      });
+    }
+
+    if (employeeId && date) {
+      const start = new Date(date);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(date);
+      end.setHours(23, 59, 59, 999);
+
+      const { data, error } = await supabase
+        .from('attendance')
+        .delete()
+        .eq('employee_id', employeeId)
+        .gte('created_at', start.toISOString())
+        .lte('created_at', end.toISOString())
+        .select();
+
+      if (error) {
+        console.error('Supabase delete error:', error);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to delete attendance records',
+          details: error.message
+        });
+      }
+
+      return res.json({
+        success: true,
+        message: 'Attendance records deleted successfully',
+        deletedCount: data?.length || 0
+      });
+    }
+
+    return res.status(400).json({
+      success: false,
+      error: 'Attendance ID or employeeId + date is required for delete'
+    });
+  } catch (error) {
+    console.error('Error deleting attendance:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',
